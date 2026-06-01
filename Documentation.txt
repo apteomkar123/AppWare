@@ -1,7 +1,69 @@
 ================================================================================
 APPWARE ECOSYSTEM — DOCUMENTATION
-Last updated: 2026-05-31
+Last updated: 2026-06-01
 ================================================================================
+
+SESSION 8 CHANGES (2026-06-01) — Stay Signed In verification + Merge AppWare Account
+------------------------------
+
+FEATURE — Stay signed in (verification)
+  All four apps already had persistSession: true + autoRefreshToken: true in their
+  Supabase clients from Session 7. Confirmed no additional changes needed.
+    - AppWare Auth: LoginPage.tsx checks for existing session on mount → redirects to
+      /portal or the requesting app automatically ✅
+    - Hungry: UserContext.jsx calls getSession() on mount + onAuthStateChange ✅
+    - Roomies: AuthContext.tsx listens to onAuthStateChange (INITIAL_SESSION restores
+      from localStorage on reload) ✅
+    - Jukebox: AuthContext.tsx calls getSession() on mount + onAuthStateChange ✅
+
+FEATURE — Merge AppWare Account (all apps)
+  Added a "Merge AppWare Account" / "Connected Accounts" section to the settings
+  page of every app. Shows the user's currently connected sign-in methods and allows
+  linking additional providers (Google) via Supabase's linkIdentity API.
+
+  Implementation:
+    - Fetches user identities via supabase.auth.getUser() on settings mount
+    - Displays each identity (email, Google) as a "Connected" chip
+    - "Link Google Account" button calls supabase.auth.linkIdentity({ provider: 'google' })
+    - On success, the browser redirects to Google OAuth; on return, Supabase links
+      the Google identity to the existing account — user can now sign in with either
+    - Google option is hidden once already linked (prevents duplicate link attempts)
+    - On error, shows inline error message
+
+  Files changed:
+    AppWare Auth/src/pages/ProfilePage.tsx — Added identities state, linkGoogle(),
+      and "Connected Accounts" section with identity chips + "Link Google Account" button.
+      Redirect URL: ${VITE_SITE_URL}/profile
+    Hungry/src/components/SettingsPage.jsx — Added import for supabase + Link icon;
+      identities state + linkGoogle(); "Merge AppWare Account" section at bottom of
+      settings. Redirect URL: VITE_APP_URL or window.location.origin
+    Roomies/roomies-app/src/pages/More.tsx — Added UserIdentity import; identities
+      state + linkGoogle(); "Merge AppWare Account" GlassPanel before end of page.
+      Redirect URL: VITE_APP_URL or window.location.origin
+    Jukebox/src/screens/settings/SettingsScreen.tsx — Added Linking import + UserIdentity
+      type; identities state + linkGoogle(); "Merge AppWare Account" Card section before
+      Sign Out button. On web: calls linkIdentity. On native: opens AppWare Auth /profile
+      in the device browser via Linking.openURL.
+
+  FeatureStatus files updated:
+    AppWare Auth/Workbook/FeatureStatus.md — Account Linking section
+    Hungry/Workbook/FeatureStatus.md — Session 15 entry
+    Roomies/roomies-app/STATUS.md — Auth section
+    Jukebox/Workbook/FeatureStatus.md — Authentication section
+
+  NOTE: Supabase Dashboard → Auth → Providers → Google must be enabled for
+  linkIdentity to work. The redirect URLs for each app must also be in the Supabase
+  "Redirect URLs" allowlist (already listed in the SUPABASE DASHBOARD CHECKLIST below).
+
+WHAT COULD NOT BE DONE
+  - Merging two completely separate AppWare accounts (data migration from account A
+    to account B): Supabase does not provide a built-in account-merge API. This would
+    require a Supabase Edge Function with the service_role key to copy all data from
+    one user_id to another and then delete the source account. Not implemented.
+  - Linking Apple Sign-In via linkIdentity: requires Apple Developer credentials
+    ($99/yr) — the UI button is absent for Apple to avoid confusing users.
+
+--------------------------------------------------------------------------------
 
 SESSION 7 CHANGES (2026-05-31) — Stay signed in (all apps)
 ------------------------------
