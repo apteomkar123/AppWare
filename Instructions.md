@@ -1,0 +1,1 @@
+All apps should stay signed in if signed in once

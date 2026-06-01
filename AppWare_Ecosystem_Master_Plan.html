@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AppWare Ecosystem Master Plan</title>
+  <style>
+    @page { size: Letter; margin: 0.42in; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #172033;
+      background: #f5f7fb;
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    .page {
+      min-height: 9.7in;
+      page-break-after: always;
+      padding: 0.15in 0 0;
+    }
+    .page:last-child { page-break-after: auto; }
+    .cover {
+      height: 9.7in;
+      page-break-after: always;
+      padding: 0.5in;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: white;
+      background:
+        linear-gradient(135deg, rgba(12, 22, 40, 0.96), rgba(22, 54, 79, 0.92)),
+        radial-gradient(circle at 18% 14%, rgba(88, 190, 255, 0.55), transparent 30%),
+        radial-gradient(circle at 88% 80%, rgba(255, 183, 103, 0.42), transparent 34%);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .cover > * { position: relative; z-index: 1; }
+    .cover:before {
+      content: "";
+      position: absolute;
+      inset: 0.42in;
+      border-radius: 24px;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 22%, rgba(104,204,255,0.24), transparent 27%),
+        radial-gradient(circle at 76% 62%, rgba(124,233,190,0.18), transparent 25%),
+        radial-gradient(circle at 88% 20%, rgba(255,180,110,0.20), transparent 25%);
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #617189;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .cover .eyebrow { color: rgba(255,255,255,0.62); }
+    h1 {
+      margin: 0;
+      max-width: 7.8in;
+      font-size: 58px;
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 0;
+      color: #142037;
+      font-size: 30px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0 0 8px;
+      color: #18243a;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    p {
+      margin: 0 0 8px;
+      color: #46566c;
+      font-size: 12.2px;
+    }
+    .cover p {
+      max-width: 7in;
+      color: rgba(255,255,255,0.78);
+      font-size: 18px;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .logo-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.13);
+      border: 1px solid rgba(255,255,255,0.22);
+    }
+    .logo-chip img {
+      width: 34px;
+      height: 34px;
+      object-fit: cover;
+      border-radius: 9px;
+    }
+    .logo-chip span {
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .cover-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .cover-card {
+      min-height: 100px;
+      padding: 15px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+    }
+    .cover-card b {
+      display: block;
+      margin-bottom: 6px;
+      color: white;
+      font-size: 13px;
+    }
+    .cover-card span {
+      color: rgba(255,255,255,0.68);
+      font-size: 11px;
+    }
+    .color-band {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .color-band span {
+      height: 8px;
+      border-radius: 999px;
+    }
+    .color-band span:nth-child(1) { background: #6baee0; }
+    .color-band span:nth-child(2) { background: #69d4a7; }
+    .color-band span:nth-child(3) { background: #f28c67; }
+    .color-band span:nth-child(4) { background: #8b7cf6; }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(75, 92, 118, 0.18);
+    }
+    .section-logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 15px;
+      object-fit: cover;
+      box-shadow: 0 12px 26px rgba(20, 35, 56, 0.16);
+    }
+    .lead {
+      padding: 20px;
+      border-radius: 24px;
+      color: white;
+      background: linear-gradient(145deg, #17243c, #285174);
+      box-shadow: 0 18px 40px rgba(35, 57, 90, 0.14);
+    }
+    .lead h3 { color: white; font-size: 23px; }
+    .lead p { color: rgba(255,255,255,0.76); font-size: 13.5px; }
+    .grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .two { grid-template-columns: repeat(2, 1fr); }
+    .three { grid-template-columns: repeat(3, 1fr); }
+    .four { grid-template-columns: repeat(4, 1fr); }
+    .card {
+      padding: 15px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.84);
+      border: 1px solid rgba(80, 101, 130, 0.15);
+      box-shadow: 0 12px 28px rgba(39, 63, 95, 0.07);
+      break-inside: avoid;
+    }
+    .accent-blue { border-top: 5px solid #6baee0; }
+    .accent-green { border-top: 5px solid #69d4a7; }
+    .accent-orange { border-top: 5px solid #f28c67; }
+    .accent-purple { border-top: 5px solid #8b7cf6; }
+    .card p { margin-bottom: 0; }
+    .mini {
+      font-size: 10.8px;
+      color: #506176;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      margin-bottom: 10px;
+      padding: 0 8px;
+      border-radius: 10px;
+      color: white;
+      background: linear-gradient(135deg, #2176ff, #64cdbb);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: #16243a;
+      color: white;
+      break-inside: avoid;
+    }
+    .metric b {
+      display: block;
+      margin-bottom: 8px;
+      color: white;
+      font-size: 27px;
+      line-height: 1;
+    }
+    .metric span {
+      color: rgba(255,255,255,0.72);
+      font-size: 11px;
+    }
+    ul {
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    li {
+      position: relative;
+      margin: 6px 0;
+      padding-left: 14px;
+      color: #46566c;
+      font-size: 11.2px;
+    }
+    li:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.58em;
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: #2176ff;
+    }
+    .feature-list {
+      column-count: 2;
+      column-gap: 18px;
+    }
+    .feature-list li {
+      break-inside: avoid;
+      padding: 9px 10px 9px 22px;
+      border-radius: 13px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(80,101,130,0.13);
+    }
+    .feature-list li:before {
+      left: 10px;
+      top: 17px;
+    }
+    .strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .strip .card { min-height: 1.55in; }
+    .table {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.1fr 2fr;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(80,101,130,0.14);
+      break-inside: avoid;
+    }
+    .row b { color: #172238; font-size: 12px; }
+    .row span { color: #4b5b70; font-size: 11px; }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .timeline .card:before {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 5px;
+      margin-bottom: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2176ff, #ff9f6e);
+    }
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .workflow .card {
+      min-height: 1.42in;
+      padding: 13px;
+    }
+    .workflow .card h3 { font-size: 13px; }
+    .workflow .card p { font-size: 10.4px; }
+    .callout {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      background: #16243a;
+      color: white;
+      break-inside: avoid;
+    }
+    .callout p { color: rgba(255,255,255,0.72); }
+    .footer-note {
+      margin-top: 18px;
+      color: #7b8798;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <p class="eyebrow">AppWare Ecosystem</p>
+      <div class="logo-row">
+        <div class="logo-chip"><img src="Hungry/public/icon-192.png" alt="Hungry"><span>Hungry</span></div>
+        <div class="logo-chip"><img src="Roomies/roomies-app/public/icon-192.png" alt="Roomies"><span>Roomies</span></div>
+        <div class="logo-chip"><img src="Jukebox/assets/icon.png" alt="Jukebox"><span>Jukebox</span></div>
+      </div>
+    </div>
+    <div>
+      <h1>Master Plan for the AppWare Ecosystem</h1>
+      <p>A human-readable product, business, build, and growth plan for AppWare Auth, Hungry, Roomies, and Jukebox.</p>
+      <div class="color-band"><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="cover-grid">
+      <div class="cover-card"><b>One account</b><span>Every app uses the same AppWare identity, profile, friends, and household context.</span></div>
+      <div class="cover-card"><b>One home graph</b><span>Households connect people, chores, groceries, events, music, payments, and history.</span></div>
+      <div class="cover-card"><b>Daily utility</b><span>Food, money, chores, shopping, events, and music become coordinated instead of scattered.</span></div>
+      <div class="cover-card"><b>Long-term moat</b><span>The AI House Manager turns shared data into proactive help and household memory.</span></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Executive Summary</p>
+        <h2>What AppWare Is</h2>
+      </div>
+    </div>
+    <div class="lead">
+      <h3>AppWare is a connected living system.</h3>
+      <p>It brings together food intelligence, household operations, and music-driven social atmosphere under one shared account. The goal is simple: make shared living easier, more coordinated, more social, and more memorable.</p>
+    </div>
+    <div class="grid four">
+      <div class="card accent-purple"><span class="badge">1</span><h3>AppWare Auth</h3><p>One login, one profile, one friend graph, and one portal into every AppWare app.</p></div>
+      <div class="card accent-blue"><span class="badge">2</span><h3>Hungry</h3><p>The kitchen brain: pantry, receipts, recipes, meal planning, nutrition, shopping, chef history, and events.</p></div>
+      <div class="card accent-green"><span class="badge">3</span><h3>Roomies</h3><p>The household operations layer: chores, bills, guests, pets, notices, lockbox, maintenance, and agreements.</p></div>
+      <div class="card accent-orange"><span class="badge">4</span><h3>Jukebox</h3><p>The social atmosphere layer: music identity, profiles, ratings, listening, discovery, concerts, and shared vibes.</p></div>
+    </div>
+    <div class="grid four">
+      <div class="metric"><b>4</b><span>Connected products in one ecosystem.</span></div>
+      <div class="metric"><b>14</b><span>Core cross-app moments already defined.</span></div>
+      <div class="metric"><b>500</b><span>Initial monthly active user target.</span></div>
+      <div class="metric"><b>1</b><span>Shared household graph powering the suite.</span></div>
+    </div>
+    <div class="callout"><p>The strategic advantage is not any single feature. It is the shared context between them: the same people, same household, same activity history, and same daily routines.</p></div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Build Story</p><h2>The Build Process</h2></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Workspace review</h3><p>All four projects were mapped: AppWare Auth, Hungry, Roomies, and Jukebox. Existing notes, schemas, feature lists, app integrations, onboarding docs, and status files were used as the source of truth.</p></div>
+      <div class="card"><h3>Unified backend</h3><p>The separate app schemas were consolidated into one shared Supabase project so accounts, profiles, households, friends, and app-specific data can coexist cleanly.</p></div>
+      <div class="card"><h3>Shared identity</h3><p>AppWare Auth became the front door. It supports email/password, account creation, password reset, Google sign-in, an app portal, and redirect-based sign-in for the other apps.</p></div>
+      <div class="card"><h3>Cross-app activity</h3><p>A shared activity feed acts as the event layer. One app can publish something meaningful, and another app can respond with context-aware behavior.</p></div>
+      <div class="card"><h3>App migrations</h3><p>Hungry, Roomies, and Jukebox were aligned around shared profiles, household membership, common friendship logic, and ecosystem events.</p></div>
+      <div class="card"><h3>Deployment checklist</h3><p>The build process includes configuring authentication redirects, enabling realtime database updates, verifying storage buckets, and adding third-party API credentials when needed.</p></div>
+    </div>
+    <div class="workflow">
+      <div class="card accent-purple"><h3>1. Audit</h3><p>Review the app folders, product notes, feature status files, schemas, and integration docs.</p></div>
+      <div class="card accent-blue"><h3>2. Normalize</h3><p>Resolve duplicated concepts like profiles, households, friends, and shared settings.</p></div>
+      <div class="card accent-green"><h3>3. Connect</h3><p>Use AppWare Auth and the shared household graph as the common layer between apps.</p></div>
+      <div class="card accent-orange"><h3>4. Sync</h3><p>Let actions publish ecosystem events so other apps can react intelligently.</p></div>
+      <div class="card accent-purple"><h3>5. Launch</h3><p>Ship with campus-focused acquisition, household invites, and milestone sharing.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Shared System</p><h2>The AppWare Data Model in Human Terms</h2></div>
+    </div>
+    <div class="table">
+      <div class="row"><b>Profiles</b><span>Every user has one AppWare profile carrying their display name, avatar, household state, dietary settings, music taste, app setup progress, and social identity.</span></div>
+      <div class="row"><b>Households</b><span>A shared home, apartment, couple, family, dorm, or community space. Hungry and Roomies both use this as the core shared context.</span></div>
+      <div class="row"><b>Household members</b><span>The member list tells each app who belongs together and what role they have, such as tenant, administrator, or landlord.</span></div>
+      <div class="row"><b>Friends</b><span>Friend requests and accepted friendships are universal, so social connections can carry across food, music, and household features.</span></div>
+      <div class="row"><b>Cross-app activity</b><span>The ecosystem signal layer. Cooking, cleaning, shopping, billing, events, mood, music, and achievements can all become shared signals.</span></div>
+      <div class="row"><b>Storage</b><span>AppWare stores avatars, property documents, maintenance images, and chef history photos in organized shared buckets.</span></div>
+      <div class="row"><b>Privacy</b><span>Private food, personal settings, and music preferences stay personal. Household data is only visible to the right household members.</span></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Core Journeys</p><h2>How the Ecosystem Feels in Real Life</h2></div>
+    </div>
+    <div class="grid two">
+      <div class="card accent-blue"><h3>Move-in weekend</h3><p>A household creates an AppWare space, invites roommates, signs basic house expectations, splits setup purchases, builds the first shared grocery list, and starts a house playlist.</p></div>
+      <div class="card accent-green"><h3>Sunday reset</h3><p>Roomies opens chore draft night, Hungry recommends a budget meal plan, Jukebox creates a cleaning playlist, and the household sees the week ahead.</p></div>
+      <div class="card accent-orange"><h3>Cooking night</h3><p>Hungry turns pantry items into recipes, Cooking Mode starts, Jukebox follows the cuisine or mood, missing ingredients move to the list, and the final meal is saved with notes and soundtrack.</p></div>
+      <div class="card accent-purple"><h3>Rent day</h3><p>Roomies shows what is owed, simplifies who pays whom, tracks settled balances, and triggers a celebratory household moment once everything is paid.</p></div>
+      <div class="card accent-blue"><h3>Party mode</h3><p>Guests join by QR, snacks are tracked, costs are split automatically, playlists are voted on, and the night becomes part of household history.</p></div>
+      <div class="card accent-green"><h3>Monthly wrap</h3><p>The household gets a shareable report: money saved, meals cooked, chores completed, top artists, best roommate moments, awards, and house personality.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Product 1</p><h2>AppWare Auth Portal</h2></div>
+    </div>
+    <div class="lead"><h3>The account layer for every AppWare app.</h3><p>The Auth portal is simple on purpose: it lets users create an AppWare account, sign in, reset passwords, use Google sign-in, manage friends, and jump into the connected apps from one hub.</p></div>
+    <ul class="feature-list">
+      <li>Email and password sign in.</li>
+      <li>Create account with email and display name.</li>
+      <li>Email confirmation flow.</li>
+      <li>Forgot password and reset password screens.</li>
+      <li>Google sign-in that still creates an AppWare account.</li>
+      <li>Automatic redirect back to the app the user came from.</li>
+      <li>App portal with configurable app tiles.</li>
+      <li>Universal AppWare friend list.</li>
+      <li>Search by display name.</li>
+      <li>Send, accept, decline, and remove friend connections.</li>
+      <li>Pending request badge on the portal.</li>
+      <li>Netlify deployment with single-page app routing.</li>
+      <li>Shared profile table and shared friendship model.</li>
+      <li>All apps connect to the same Supabase project.</li>
+    </ul>
+    <div class="table">
+      <div class="row"><b>User promise</b><span>One AppWare account follows the user everywhere: food, chores, friends, music, profile, and household state.</span></div>
+      <div class="row"><b>Portal role</b><span>The portal should feel like a calm command center, not a marketing site: sign in, choose an app, manage friends, and return to what you were doing.</span></div>
+      <div class="row"><b>Growth role</b><span>Every invite to a household, friend request, shared recipe, event, or listening room quietly reinforces the AppWare account as the user’s shared-living identity.</span></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Product 2</p><h2>Hungry</h2></div>
+      <img class="section-logo" src="Hungry/public/icon-192.png" alt="Hungry">
+    </div>
+    <div class="lead"><h3>The intelligent kitchen.</h3><p>Hungry helps people manage food, reduce waste, cook from what they already have, coordinate shopping, and turn meals into a shared household memory.</p></div>
+    <div class="grid three">
+      <div class="card"><h3>Pantry</h3><p>Manual item entry, receipt scanning, barcode lookup, inline editing, expiry tracking, quantity controls, categories, personal pantry, and household pantry support.</p></div>
+      <div class="card"><h3>Recipes</h3><p>MealDB, Spoonacular, static recipes, pantry match sorting, search, filters, AI recipe generation, missing ingredient actions, saved recipes, household sharing, substitutions, and nutrition estimates.</p></div>
+      <div class="card"><h3>Cooking mode</h3><p>Full-screen step-by-step cooking, voice commands, voice substitution help, ingredient panel, microphone state, screen wake support where available, and mark-as-cooked flow.</p></div>
+      <div class="card"><h3>Shopping</h3><p>Manual shopping list, aisle grouping, item checkoff, delete, rename, personal list, household list, and Personal Shopper mode.</p></div>
+      <div class="card"><h3>Chef history</h3><p>Meals are logged automatically when cooked. Entries can include notes, photos, public/private visibility, ingredient previews, full recipe access, and leftover remixing.</p></div>
+      <div class="card"><h3>Analytics</h3><p>Nutrition overview, AI nutrition coach, eco score, spending tracker, budget limits, taste profile heatmap, meal prep planning, and AppWare Wrap concepts.</p></div>
+      <div class="card"><h3>Household</h3><p>Create or join households, switch households, view members, share recipes, share shopping lists, settle up, and use Venmo or Splitwise links.</p></div>
+      <div class="card"><h3>Friends</h3><p>Friend codes, search by display name, requests, accepted friends, public chef history feed, and profile modals with public recipes and cooking stats.</p></div>
+      <div class="card"><h3>Events</h3><p>Potluck-style event creation, invite codes, share links, claimed items, readiness progress, guest dietary restrictions, and event detail improvements planned.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Hungry Expansion</p><h2>Next-Level Kitchen Product Depth</h2></div>
+      <img class="section-logo" src="Hungry/public/icon-192.png" alt="Hungry">
+    </div>
+    <div class="grid three">
+      <div class="card accent-blue"><h3>Guided feature tour</h3><p>A polished interactive tutorial that walks users through pantry, recipes, shopping, cooking mode, chef history, analytics, households, friends, and events using contextual prompts.</p></div>
+      <div class="card accent-blue"><h3>Events hub</h3><p>Potlucks become a broader Events section with RSVPs, dietary restrictions, venue, time, attendees, claimed items, and tappable public profiles.</p></div>
+      <div class="card accent-blue"><h3>Recipe expansion</h3><p>More suggested recipes, category view-more pages, image-rich grids, dietary conversions, substitution tags, and deeper Explore coverage.</p></div>
+      <div class="card accent-blue"><h3>Nutrition-aware shopping</h3><p>Shopping lists suggest better alternatives according to protein, carb, budget, dietary, and nutrition goals.</p></div>
+      <div class="card accent-blue"><h3>Store intelligence</h3><p>Store selection can surface aisle locations, map routes, item availability, substitute products, and alternate stores.</p></div>
+      <div class="card accent-blue"><h3>Taste profile</h3><p>A richer visual heat map shows cuisines, meal types, cooking frequency, exploration patterns, and household taste identity.</p></div>
+    </div>
+    <div class="table">
+      <div class="row"><b>Daily use loop</b><span>Add food → discover recipes → shop efficiently → cook hands-free → log the meal → improve suggestions.</span></div>
+      <div class="row"><b>Household loop</b><span>Share pantry items → coordinate shopping → plan events → split grocery costs → build a shared cooking history.</span></div>
+      <div class="row"><b>Monetization loop</b><span>Free recipe generation introduces value; premium unlocks unlimited AI, meal budgets, advanced analytics, and household reports.</span></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Product 3</p><h2>Roomies</h2></div>
+      <img class="section-logo" src="Roomies/roomies-app/public/icon-192.png" alt="Roomies">
+    </div>
+    <div class="lead"><h3>The household operating system.</h3><p>Roomies handles the hard parts of living together: chores, bills, guests, shared spaces, maintenance, lockbox information, pets, notices, agreements, and presence.</p></div>
+    <div class="grid three">
+      <div class="card"><h3>Design system</h3><p>Porcelain Neon Glass: clean white canvas, soft ambient color, translucent panels, bold headers, floating bottom navigation, and expressive status states.</p></div>
+      <div class="card"><h3>Onboarding</h3><p>Profile setup, avatar, household creation or invite joining, co-living rules, quiet hours, hygiene expectations, guest rules, and digital signature handshake.</p></div>
+      <div class="card"><h3>Chores</h3><p>Recurring chores, calendar assignments, rotating ownership, away-state redistribution, marketplace trades, cash bounties, and karma rewards.</p></div>
+      <div class="card"><h3>Finances</h3><p>Transactions, split payments, subscriptions, settlement status, creditor/debtor minimization, grocery expense syncing, and rent-day reward hooks.</p></div>
+      <div class="card"><h3>Household logistics</h3><p>Shared shopping items, notices, read acknowledgments, common-area bookings, guest logs, and household event coordination.</p></div>
+      <div class="card"><h3>Property and safety</h3><p>Maintenance tickets, property image storage, lockbox secrets, Wi-Fi QR access, emergency instructions, and landlord-ready workflows.</p></div>
+      <div class="card"><h3>Pets</h3><p>Pet feeding, walks, medication, timestamps, user attribution, and future pet-expense tracking.</p></div>
+      <div class="card"><h3>Presence</h3><p>Available, sleeping, study mode, work from home, away, custom text, and avatar halo status visualization.</p></div>
+      <div class="card"><h3>Algorithms</h3><p>Chore rotation, debt minimization, and guest overstay utility surcharge logic.</p></div>
+    </div>
+    <div class="table">
+      <div class="row"><b>Chore loop</b><span>Create chores → assign rotation → account for away roommates → complete or trade tasks → earn karma → trigger household celebration.</span></div>
+      <div class="row"><b>Money loop</b><span>Add rent, utilities, groceries, or subscriptions → split by members → minimize transfers → mark settled → produce reports.</span></div>
+      <div class="row"><b>Trust loop</b><span>House rules, read acknowledgments, guest logs, lockbox records, and maintenance history reduce ambiguity and roommate friction.</span></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Product 4</p><h2>Jukebox</h2></div>
+      <img class="section-logo" src="Jukebox/assets/icon.png" alt="Jukebox">
+    </div>
+    <div class="lead"><h3>The music identity and atmosphere app.</h3><p>Jukebox turns music taste into a social profile, shared discovery engine, concert planner, artist utility layer, and household atmosphere controller.</p></div>
+    <div class="grid three">
+      <div class="card"><h3>Identity</h3><p>User profiles, display name, username, avatar, bio, listener or artist role, privacy controls, theme settings, vibe tags, and profile layout ordering.</p></div>
+      <div class="card"><h3>Era themes</h3><p>1980s synth, 1990s grunge, 2000s chrome, 2010s blog-era minimalism, and 2020s neo-soul styling.</p></div>
+      <div class="card"><h3>Onboarding</h3><p>Vibe check, identity crafting, genre taste map, era selection, completion screen, and interactive feature tour.</p></div>
+      <div class="card"><h3>Ratings</h3><p>Liquid Vinyl Rating slider, half-step scoring, liner notes, album ratings, circle average, global average, and shareable music cards.</p></div>
+      <div class="card"><h3>Home</h3><p>Now playing, heavy rotation, top albums, circle averages, drops this week, reminders, and Spotify-backed music data when connected.</p></div>
+      <div class="card"><h3>Social</h3><p>Friends, friend requests, user search, friend profiles, now-playing sharing, messages, music attachments, and future real-time feed expansion.</p></div>
+      <div class="card"><h3>Discovery</h3><p>Sonic Geography, Concert Polaroid Board, Blind Mixtape Swap, emerging artists, Samples Matrix, and local music discovery.</p></div>
+      <div class="card"><h3>Concerts</h3><p>Wishlist, going toggle, ticket stubs, concert fund signals, setlist voting, Green Room channels, and artist pages.</p></div>
+      <div class="card"><h3>Artist tools</h3><p>Giveaways, drops, merch surfaces, Day One Registry, tour dates, setlist votes, and fan engagement tools.</p></div>
+    </div>
+    <div class="table">
+      <div class="row"><b>Listener loop</b><span>Connect music services → rate albums → personalize profile → share cards → discover through friends → build a music identity.</span></div>
+      <div class="row"><b>Household loop</b><span>Now playing, shared wishlists, cleaning playlists, cooking soundtracks, and celebration songs make the home feel reactive.</span></div>
+      <div class="row"><b>Artist loop</b><span>Drops, reminders, setlist voting, ticket stubs, giveaways, merch, and Green Room spaces create direct fan engagement.</span></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Cross-App Features</p><h2>The Ecosystem Moments</h2></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Kitchen Concert</h3><p>Starting Cooking Mode in Hungry can trigger a cuisine-matched playlist in Jukebox.</p></div>
+      <div class="card"><h3>Chore-Sync Anthems</h3><p>Starting or completing hard chores in Roomies can trigger high-energy cleaning music.</p></div>
+      <div class="card"><h3>Smart Grocery Split</h3><p>Household grocery items in Hungry can create shared expenses in Roomies.</p></div>
+      <div class="card"><h3>Potluck Planner</h3><p>Roomies events can become Hungry shopping lists and Jukebox household playlists.</p></div>
+      <div class="card"><h3>Eco-Vibe Analytics</h3><p>Monthly reports combine food savings, chores, bills, and music taste.</p></div>
+      <div class="card"><h3>Mood-Food Matching</h3><p>Jukebox mood can influence Hungry recipe suggestions.</p></div>
+      <div class="card"><h3>Grocery Gig Status</h3><p>Opening Personal Shopper can show housemates that someone is at the store.</p></div>
+      <div class="card"><h3>Victory Fanfare</h3><p>When the house finishes every chore, Jukebox can play a celebration song.</p></div>
+      <div class="card"><h3>Concert Fund Tracker</h3><p>If multiple roommates want the same artist, Roomies can suggest a shared concert fund.</p></div>
+      <div class="card"><h3>Late-Night Snack Mode</h3><p>Late-night music can switch Hungry toward quick snacks and dark-mode suggestions.</p></div>
+      <div class="card"><h3>Soundtrack of My Life</h3><p>Chef History can save the music playing when a meal was finished.</p></div>
+      <div class="card"><h3>Rent-Day Rewards</h3><p>When bills are paid, Jukebox can unlock a celebration theme or playlist.</p></div>
+      <div class="card"><h3>Nutritional BPM</h3><p>Nutrition shortfalls can elevate active chores and workout music.</p></div>
+      <div class="card"><h3>Campus Survival</h3><p>Finals calendars can lower chore expectations and trigger study playlists.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Future Product</p><h2>Feature Ideas</h2></div>
+    </div>
+    <ul class="feature-list">
+      <li>AI Household Assistant that combines expiring food, overdue chores, mood, budget, and music into one suggested plan.</li>
+      <li>Roommate Compatibility Score using cleaning habits, music taste, cooking frequency, and sleep schedules.</li>
+      <li>House Party Mode with shared playlist voting, snack tracking, automatic cost splitting, and guest QR joins.</li>
+      <li>AI Grocery Predictor that learns when the household runs out of staples.</li>
+      <li>Milestone cards for first clean-house streaks, 50th meal, one-year household anniversary, and shared listening hours.</li>
+      <li>Landlord Edition with rent tracking, maintenance requests, and household analytics.</li>
+      <li>AI Meal Budget Mode for weekly budget, household size, grocery list, recipes, cost breakdown, and expense split.</li>
+      <li>House Personalities based on cleaning, food, music, takeout, and budget patterns.</li>
+      <li>Chore Draft Night with fantasy-style weekly chore claiming.</li>
+      <li>Household Wrapped with top artist, most cooked meal, biggest spender, most reliable roommate, most forgotten chore, and MVP.</li>
+      <li>AI Fridge Detective using a photo to tell users what meals they can make.</li>
+      <li>Household Lore timeline with first meals, grocery trips, receipts, streaks, and funny household events.</li>
+      <li>House Pet Integration for feeding, walking, vet appointments, and expenses.</li>
+      <li>Real-Life Achievements like Survived Finals Week, First Apartment Together, Zero Food Waste Month, and No Chore Arguments.</li>
+      <li>Relationship Mode for couples, engaged couples, newlyweds, shared budgets, date nights, and relationship milestones.</li>
+    </ul>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Student Expansion</p><h2>EDU Mode</h2></div>
+    </div>
+    <div class="grid three">
+      <div class="card"><h3>Finals Week Mode</h3><p>Lower chores, prioritize critical tasks, suggest quick meals, budget meals, study rooms, focus playlists, and Pomodoro sessions.</p></div>
+      <div class="card"><h3>Shared Food Economy</h3><p>Food ownership labels: Shared, Mine, Ask First, and Hands Off.</p></div>
+      <div class="card"><h3>Broke Student Mode</h3><p>Weekly budget, dining hall swipes, grocery budget, and AI meal plans.</p></div>
+      <div class="card"><h3>Campus Specials</h3><p>Cheap food deals, free pizza, happy hours, club events, and daily campus value.</p></div>
+      <div class="card"><h3>Campus Alerts</h3><p>Dining hall closing, bus delays, and practical campus notifications.</p></div>
+      <div class="card"><h3>Semester Wrapped</h3><p>Coffees, meals cooked, all-nighters, songs played, and grocery savings.</p></div>
+      <div class="card"><h3>GPA Protection</h3><p>Reduce notifications and lower chore pressure around exams and deadlines.</p></div>
+      <div class="card"><h3>Move-In Week</h3><p>Checklists, split purchases, roommate agreements, cleaning supplies, mini fridges, and shared setup.</p></div>
+      <div class="card"><h3>Student Marketplace</h3><p>Verified student trading for textbooks, furniture, TVs, mini fridges, and air fryers.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Growth</p><h2>Rollout Plan</h2></div>
+    </div>
+    <div class="timeline">
+      <div class="card"><h3>Roommate Domino</h3><p>Use Roomies as the entry point. One rent or chore setup naturally invites the rest of the household.</p></div>
+      <div class="card"><h3>Social Proof</h3><p>Short-form videos around cooking music, chore music, grocery splitting, and household awards.</p></div>
+      <div class="card"><h3>AppWare Wrap</h3><p>Launch a Household Pulse report with meals, savings, chores, bills, and music stats.</p></div>
+      <div class="card"><h3>Move-In Blitz</h3><p>August checklist, roommate agreement template, budget planner, and email capture.</p></div>
+    </div>
+    <ul class="feature-list">
+      <li>Campus Founder program with 5 to 10 ambassadors per school.</li>
+      <li>Launch by school: NC State, then UNC, then ECU.</li>
+      <li>Founding Household status for the first 100 households.</li>
+      <li>Market waves: roommates, couples, families, communities.</li>
+      <li>Referral loops built directly into Meal Analytics, House Karma, and shared listening rooms.</li>
+      <li>Seasonal launches: Cookout Mode, Football Saturdays, Holiday House Mode, and Deep Clean Challenge.</li>
+      <li>Outcome-based marketing: save money, cook more meals, and stop arguing about chores.</li>
+      <li>Monthly household awards users will screenshot and share.</li>
+    </ul>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Revenue</p><h2>Monetization Plan</h2></div>
+    </div>
+    <div class="grid three">
+      <div class="card"><h3>Household Subscription</h3><p>$9.99 per household for up to six roommates.</p></div>
+      <div class="card"><h3>Student Plus</h3><p>$2.99 per month for unlimited AI, Semester Wrapped, rankings, and themes.</p></div>
+      <div class="card"><h3>House Plus</h3><p>$14.99 per month for shared assistant, reports, premium access, and leaderboards.</p></div>
+      <div class="card"><h3>Grocery Cashback</h3><p>Earn affiliate revenue when Hungry builds shopping carts through grocery partners.</p></div>
+      <div class="card"><h3>Restaurant Partnerships</h3><p>Suggest local deals when a household lacks ingredients or wants takeout.</p></div>
+      <div class="card"><h3>Campus Marketplace</h3><p>Local businesses pay to reach students with relevant offers.</p></div>
+      <div class="card"><h3>Premium Wrap</h3><p>Animated household report, deeper stats, custom themes, and AI story.</p></div>
+      <div class="card"><h3>Custom Themes</h3><p>Y2K, Vaporwave, College Football, Retro Dorm, and seasonal packs.</p></div>
+      <div class="card"><h3>Digital Collectibles</h3><p>Founder badges, streak badges, top-house badges, and status markers.</p></div>
+      <div class="card"><h3>Family Tier</h3><p>Groceries, chores for kids, allowance, and family meal planning.</p></div>
+      <div class="card"><h3>Moving Kits</h3><p>Moving-in-together and newlywed packs with templates and checklists.</p></div>
+      <div class="card"><h3>Enterprise</h3><p>Property manager edition for maintenance, community events, shared spaces, and resident communication.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="section-head">
+      <div><p class="eyebrow">Constraints</p><h2>What Still Needs Credentials or Native Apps</h2></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Apple Sign-In</h3><p>Needs Apple Developer membership and provider setup before full Apple sign-in can be enabled.</p></div>
+      <div class="card"><h3>Geofencing</h3><p>Automatic background store or home detection needs native iOS and Android location APIs.</p></div>
+      <div class="card"><h3>Push Notifications</h3><p>Reliable background reminders need web push or native push infrastructure.</p></div>
+      <div class="card"><h3>Live Activities</h3><p>Cooking Mode on lock screen or Dynamic Island requires native iOS support.</p></div>
+      <div class="card"><h3>Music Integrations</h3><p>Spotify, Apple Music, Instagram, Bandsintown, Ticketmaster, and Shopify need credentials or API approval.</p></div>
+      <div class="card"><h3>Smart Speaker Control</h3><p>Victory songs and shared playback need Spotify Connect, Cast, AirPlay, or speaker integrations.</p></div>
+    </div>
+    <p class="footer-note">Generated from the current AppWare workspace. Raw code dumps and old document framing were intentionally excluded.</p>
+  </section>
+</body>
+</html>
