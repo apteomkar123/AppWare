@@ -1,5 +1,5 @@
-All apps should stay signed in if signed in once
-
-Add a setting to all the apps where you can merge your current account with a new AppWare account or already existing AppWare account.
-
 Roomies and Hungry should have shared households, and therefore shared grocery lists  by default. Add an option for the user to change it to an app specific household.
+
+Build the nav for all the apps to be in the exact interface and mechanics as Hungry.
+
+Add ecosystem (Hunger, Roomies, Jukebox connectivity) features to all the tutorials on all the apps too.

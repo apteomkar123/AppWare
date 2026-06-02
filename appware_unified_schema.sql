@@ -196,6 +196,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   away                boolean  NOT NULL DEFAULT false,
   -- Hungry: which household is currently "active" in the pantry context
   active_household_id uuid,    -- FK added after households exists (see ALTER below)
+  -- Hungry: app-specific household override (NULL = share active_household_id with Roomies)
+  hungry_household_id uuid,    -- FK added after households exists (see ALTER below)
   -- Hungry: personal settings stored as JSONB
   -- Schema: { personal_name, dietary_restrictions[], nutrition_goals{},
   --           age, weight_lbs, height_in, personal_monthly_budget }
@@ -221,6 +223,12 @@ ALTER TABLE public.households
 ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_active_household_fk
   FOREIGN KEY (active_household_id)
+  REFERENCES public.households(id) ON DELETE SET NULL
+  DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_hungry_household_fk
+  FOREIGN KEY (hungry_household_id)
   REFERENCES public.households(id) ON DELETE SET NULL
   DEFERRABLE INITIALLY DEFERRED;
 

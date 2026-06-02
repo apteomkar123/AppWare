@@ -1,7 +1,107 @@
 ================================================================================
 APPWARE ECOSYSTEM — DOCUMENTATION
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 ================================================================================
+
+SESSION 16 CHANGES (2026-06-02) — Shared Households / Grocery Lists + Nav Overhaul + Ecosystem Tutorials
+------------------------------
+
+FEATURE 1 — Shared Households & Grocery Lists (Hungry + Roomies)
+  By default, Hungry and Roomies share the same household (via profiles.active_household_id).
+  The grocery lists (Hungry: shopping_list, Roomies: shopping_items) now cross-read each
+  other for the shared household, so items show up in both apps with source badges.
+
+  Implementation:
+    Hungry/src/components/UserContext.jsx
+      - Added hungryHouseholdId state (loaded from profiles.hungry_household_id)
+      - Added computed hungryHousehold (= specific if set, else activeHousehold)
+      - Added isHungryShared boolean (true when hungry_household_id is NULL)
+      - Added handleSetHungrySpecificHousehold(id) and handleClearHungryHousehold()
+      - household prop in context now returns hungryHousehold (app-aware)
+
+    Hungry/src/App.jsx
+      - MainApp now pulls hungryHousehold from useUser() and passes to useInventory()
+
+    Hungry/src/components/useInventory.js
+      - fetchAppData cross-reads shopping_items for the same household, mapping
+        title→item_name, purchased→is_completed, urgent→is_urgent, added_by→user_id
+      - Roomies items get _source:'roomies' and _roomies_id for dispatch routing
+      - handleToggleShoppingCompleted, handleClearShoppingItem, handleRenameShoppingItem,
+        handleMoveShoppingItem, handleClearAllShoppingItems, handleMarkAllShoppingCompleted
+        all check _source and dispatch to the correct table/column
+
+    Hungry/src/components/HouseholdSettings.jsx
+      - New "Household Mode" section at top: Shared with Roomies / Hungry-Specific toggle
+      - Hungry-Specific mode shows a household picker for all the user's households
+      - Shared mode clears hungry_household_id in profiles
+
+    Roomies/roomies-app/src/pages/Shopping.tsx
+      - load() now also fetches shopping_list items for the same household
+      - Maps item_name→title, is_completed→purchased, is_urgent→urgent
+      - togglePurchased and deleteItem dispatch to the correct table
+      - Real-time subscription covers both tables
+      - HUNGRY badge renders on cross-app items
+      - Empty state message updated
+
+  DB: Hungry/supabase/migrations/009_hungry_household_id.sql
+    ALTER TABLE profiles ADD COLUMN hungry_household_id uuid REFERENCES households(id)
+  Schema: appware_unified_schema.sql updated with new column and FK constraint
+
+FEATURE 2 — Hungry-style Floating Nav in Roomies
+  Replaced the fixed left sidebar with a floating glass drawer identical to Hungry's nav:
+  hamburger button (fixed top-left), backdrop overlay on open, swipe-right-from-left-edge
+  to open, swipe-left to close, Lucide icons (22px), animated scale+opacity transition.
+
+  Implementation:
+    Roomies/roomies-app/src/components/ui/NavBar.tsx — full rewrite
+      - Replaced emoji icons with Lucide icons (Home, CheckSquare, DollarSign, Bell,
+        Calendar, Wrench, ShoppingCart, PawPrint, Users, Lock, Star, Settings)
+      - Added navOpen state + touch swipe gesture handlers via document event listeners
+      - Hamburger button always visible at fixed top-left (z-index 60)
+      - Backdrop (z-index 50) + drawer (z-index 55) in overlay positions
+      - Drawer uses inline styles matching Hungry's glass/blur/rounded-32 aesthetic
+      - Badge count display preserved for Notices and Maintenance
+
+    Roomies/roomies-app/src/index.css — removed nav-sidebar fixed sidebar styles
+      - .app-content margin-left removed (nav is now an overlay, no content offset)
+
+    Roomies/roomies-app/package.json — lucide-react added
+
+FEATURE 3 — Hungry-style Floating Nav in Jukebox (React Native)
+  Implemented a custom NavDrawer overlay component using Animated + PanResponder +
+  BlurView for the same floating glass drawer mechanics, since Jukebox is React Native.
+
+  Implementation:
+    Jukebox/src/components/NavDrawer.tsx — new component
+      - Hamburger button (fixed top-left, Platform-aware safe area)
+      - Animated slide-in/out from left with spring animation
+      - PanResponder for swipe-to-close gesture inside drawer
+      - Edge swipe zone (30px from left) for swipe-to-open
+      - BlurView for glass effect; theme-aware colors from useTheme()
+      - 5 nav items matching existing Tab.Navigator screens
+
+    Jukebox/src/navigation/AppNavigator.tsx
+      - Tab.Navigator wrapped in View with NavDrawer as sibling overlay
+
+FEATURE 4 — Ecosystem Steps in All App Tutorials
+  Hungry TutorialOverlay.jsx — 3 new steps added at end:
+    "AppWare Ecosystem", "Shared Grocery List", "Kitchen Concert & Mood Food"
+
+  Roomies Tutorial.tsx — 2 new steps added:
+    "Shared Grocery List with Hungry", "Chore Sync Anthems"
+    TutorialContext TUTORIAL_TOTAL: 9 → 11
+
+  Jukebox InteractiveTour.tsx — 2 new steps added at end:
+    "Kitchen Concert", "AppWare Ecosystem"
+
+WHAT COULD NOT BE DONE
+  - Jukebox NavDrawer tested only in code; requires Expo build to verify swipe
+    mechanics on physical device (PanResponder behavior differs device-to-device).
+  - Roomies Tutorial nav step references tut-navbar ID — this now targets the
+    hamburger button (id="tut-nav-open") in the new drawer nav; tutorial step
+    desc was not updated to reflect the new nav mechanic (floating drawer).
+
+--------------------------------------------------------------------------------
 
 SESSION 8 CHANGES (2026-06-01) — Stay Signed In verification + Merge AppWare Account
 ------------------------------
