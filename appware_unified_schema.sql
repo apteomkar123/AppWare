@@ -100,7 +100,7 @@ DROP TYPE IF EXISTS public.chore_status       CASCADE;
 DROP TYPE IF EXISTS public.expense_category   CASCADE;
 DROP TYPE IF EXISTS public.notice_type        CASCADE;
 DROP TYPE IF EXISTS public.maintenance_status CASCADE;
-DROP TYPE IF EXISTS public.pet_action         CASCADE;
+DROP TYPE IF EXISTS public.pet_action         CASCADE; -- kept for safe drop on existing DBs
 
 
 -- ============================================================
@@ -139,9 +139,7 @@ CREATE TYPE public.notice_type AS ENUM (
 CREATE TYPE public.maintenance_status AS ENUM (
   'Open', 'Vendor Dispatched', 'Resolved'
 );
-CREATE TYPE public.pet_action AS ENUM (
-  'Morning Feed', 'Evening Feed', 'Daily Walk', 'Medication Administered'
-);
+-- pet_action enum removed — pet_logs.action is now text to support custom chore names
 
 
 -- ============================================================
@@ -246,7 +244,9 @@ CREATE TABLE IF NOT EXISTS public.household_members (
 -- ── is_household_member helper (defined early; SECURITY DEFINER
 --    bypasses RLS so policies can call it without recursion) ──
 CREATE OR REPLACE FUNCTION public.is_household_member(hid uuid)
-RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
+RETURNS boolean LANGUAGE sql SECURITY DEFINER
+SET search_path = public
+AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.household_members
     WHERE household_id = hid AND profile_id = auth.uid()
@@ -586,12 +586,12 @@ CREATE TABLE IF NOT EXISTS public.maintenance_tickets (
 
 -- ── Pet Logs ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.pet_logs (
-  id            uuid              PRIMARY KEY DEFAULT uuid_generate_v4(),
-  household_id  uuid              NOT NULL REFERENCES public.households(id)  ON DELETE CASCADE,
-  pet_name      text              NOT NULL,
-  action        public.pet_action NOT NULL,
-  done_by       uuid              NOT NULL REFERENCES public.profiles(id)    ON DELETE CASCADE,
-  action_at     timestamptz       NOT NULL DEFAULT now()
+  id            uuid        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  household_id  uuid        NOT NULL REFERENCES public.households(id)  ON DELETE CASCADE,
+  pet_name      text        NOT NULL,
+  action        text        NOT NULL,
+  done_by       uuid        NOT NULL REFERENCES public.profiles(id)    ON DELETE CASCADE,
+  action_at     timestamptz NOT NULL DEFAULT now()
 );
 
 -- ── Co-living Agreement & Signatures ─────────────────────────
