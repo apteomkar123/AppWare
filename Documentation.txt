@@ -3,6 +3,32 @@ APPWARE ECOSYSTEM — DOCUMENTATION
 Last updated: 2026-06-02
 ================================================================================
 
+SESSION 19 CHANGES (2026-06-02) — Household Mode fix in HouseholdTab
+------------------------------
+
+BUG FIX — Household Mode not visible in Hungry Household tab
+  HouseholdSettings.jsx was correctly implementing the Household Mode toggle, but
+  was never rendered. App.jsx rendered HouseholdTab for the 'household' tab, not
+  HouseholdSettings. The Household Mode section (Shared with Roomies / Hungry-Specific)
+  was therefore invisible to users.
+
+  Fix:
+    Hungry/src/components/HouseholdTab.jsx
+      - Added Lock to lucide-react imports
+      - Added hungryHouseholdId, isHungryShared, handleSetHungrySpecificHousehold,
+        handleClearHungryHousehold from useUser() context
+      - Added Household Mode section at the top of the main return (above household selector),
+        mirroring the exact UI from HouseholdSettings.jsx:
+          · "Shared with Roomies" button (sky-500 when active)
+          · "Hungry-Specific" button (sky-400 when active)
+          · Sub-picker showing all households when Hungry-Specific is selected
+          · Warning message when only one household exists
+
+WHAT COULD NOT BE DONE
+  - Nothing blocked.
+
+--------------------------------------------------------------------------------
+
 SESSION 16 CHANGES (2026-06-02) — Shared Households / Grocery Lists + Nav Overhaul + Ecosystem Tutorials
 ------------------------------
 
