@@ -3,6 +3,101 @@ LYFEWARE ECOSYSTEM — DOCUMENTATION
 Last updated: 2026-06-03
 ================================================================================
 
+SESSION 23 CHANGES (2026-06-03) — Bug fixes + feature additions across all apps
+------------------------------
+
+VINYL (Jukebox/)
+  BUG FIX — Back button not working on desktop web
+    NavDrawer hamburger at top-left (position:absolute, zIndex:49) was intercepting
+    clicks on back buttons in detail screens. Fixed by checking navigation.canGoBack()
+    in NavDrawer.tsx: when true, renders ArrowLeft (goes back) instead of the Menu
+    hamburger.
+    Files changed: Jukebox/src/components/NavDrawer.tsx
+
+  BUG FIX — Liner notes submit does nothing
+    The submit button was disabled because myScore was always 0. Root cause:
+    PanResponder's locationX is inaccurate on web. Fixed with pageX - trackPageX
+    calculation in LiquidVinylRating.tsx.
+    Files changed: Jukebox/src/components/cards/LiquidVinylRating.tsx
+
+  BUG FIX — Play/pause/next/prev buttons do nothing on now playing
+    spotifyPlaybackControl() was returning void and errors were swallowed silently.
+    Rewrote to return { ok, status, error }. Added optimistic UI updates and Alert
+    messages for 403 (no Spotify Premium), 404 (no active device), network errors.
+    Files changed: Jukebox/src/services/spotify.ts, Jukebox/src/context/SpotifyDataContext.tsx
+
+  FEATURE — Confetti on tutorial completion
+    canvas-confetti fires in markDone() via dynamic import (web only).
+    Files changed: Jukebox/src/screens/auth/InteractiveTour.tsx
+
+HOMEBASE (Roomies/roomies-app/)
+  FEATURE — Tutorial example cards for empty-state features
+    Tutorial.tsx tracks isFallback state. When a feature's DOM element isn't found
+    (empty chores, finance, etc.), renders a visual preview card with example data
+    at the spotlight position instead of just highlighting blank space.
+    Files changed: Roomies/roomies-app/src/components/Tutorial.tsx
+
+  FEATURE — Add food items to Pantry from HomeBase (bi-directional sync)
+    Shopping.tsx addItem() now writes to shopping_list (Pantry's shared table)
+    instead of shopping_items. Items added in HomeBase now appear in Pantry's
+    Shopping tab automatically.
+    Files changed: Roomies/roomies-app/src/pages/Shopping.tsx
+
+  FEATURE — Confetti on tutorial completion
+    canvas-confetti fires in TutorialContext.complete().
+    Files changed: Roomies/roomies-app/src/context/TutorialContext.tsx
+
+  FEATURE — Rename household
+    Edit (✎) button next to each household name in More.tsx opens an inline
+    input field. Saves to Supabase households.name.
+    Files changed: Roomies/roomies-app/src/pages/More.tsx
+
+PANTRY (Hungry/)
+  BUG FIX — Start cooking / simple recipe view does nothing
+    RecipeModal and CookingMode were both mounted simultaneously, causing stacking
+    context conflicts (RecipeModal z-[60] blocked CookingMode z-100). Fixed by
+    conditionally hiding RecipeModal when isCookingMode is true.
+    Files changed: Hungry/src/App.jsx
+
+  BUG FIX — Tutorial not highlighting features
+    All tutorial STEPS had selector: null. Added id attributes to tab content
+    wrappers in App.jsx and updated TutorialOverlay.jsx STEPS with matching selectors.
+    Files changed: Hungry/src/App.jsx, Hungry/src/components/TutorialOverlay.jsx
+
+  FEATURE — Shareable friend invite link ("Add me on Pantry!")
+    Share button in FriendsPage uses Web Share API (or clipboard copy as fallback).
+    Shares: "Add me on Pantry! My friend code is XXXX. Join me at [URL]"
+    Files changed: Hungry/src/components/FriendsPage.jsx
+
+  FEATURE — Remove household toggle from shopping list items
+    Per-item Users button removed from ShoppingListManager. Shopping list follows
+    the master active household in the Header automatically.
+    Files changed: Hungry/src/components/ShoppingListManager.jsx, Hungry/src/App.jsx
+
+  FEATURE — Rename household
+    Pencil icon on each household card in HouseholdSettings opens an inline rename
+    input. Saves to Supabase households.name. Added handleRenameHousehold to
+    UserContext.jsx.
+    Files changed: Hungry/src/components/HouseholdSettings.jsx,
+                   Hungry/src/components/UserContext.jsx
+
+LYFEWARE AUTH (AppWare Auth/)
+  BUG FIX — App logos not showing in portal
+    APPS array in PortalPage.tsx referenced non-existent files (pantry-icon.svg,
+    homebase-icon.svg, vinyl-icon.png). Fixed paths to actual files:
+    hungry-icon.svg, roomies-icon.svg, jukebox-icon.png. Also corrected
+    hungry-icon.svg text from "Hungry" to "Pantry".
+    Files changed: AppWare Auth/src/pages/PortalPage.tsx,
+                   AppWare Auth/public/hungry-icon.svg
+
+NOT DONE / LIMITATIONS
+- Pantry logo "needs to say Pantry in Pacifico font" — already done in Header.jsx
+  (logo-text class = Pacifico). No change needed.
+- HomeBase tutorial example cards use pre-written text previews, not live data.
+  Live data previews would require fetching per-step data before showing the card.
+
+================================================================================
+
 SESSION 20 CHANGES (2026-06-03) — App rename + Non-food cross-app sync
 ------------------------------
 
