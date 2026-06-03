@@ -1,13 +1,13 @@
--- ============================================================
--- APPWARE ECOSYSTEM — UNIFIED SUPABASE SCHEMA
+﻿-- ============================================================
+-- LYFEWARE ECOSYSTEM — UNIFIED SUPABASE SCHEMA
 -- Generated: 2026-05-29
 -- Supabase Project: wshadsznycwugowiexmy.supabase.co
 --
--- Covers: Hungry (food/kitchen), Roomies (household mgmt),
---         Jukebox (music social), AppWare Auth (SSO portal)
+-- Covers: Pantry (food/kitchen), HomeBase (household mgmt),
+--         Vinyl (music social), LyfeWare Auth (SSO portal)
 --
 -- ⚠  THIS SCRIPT IS DESTRUCTIVE — it drops all existing
---    AppWare tables before recreating them.
+--    LyfeWare tables before recreating them.
 --    Back up any data you want to keep first.
 --
 -- HOW TO RUN:
@@ -113,7 +113,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 
 -- ============================================================
--- PHASE 2 — ENUM TYPES  (Roomies-specific domain values)
+-- PHASE 2 — ENUM TYPES  (HomeBase-specific domain values)
 -- ============================================================
 
 CREATE TYPE public.member_role AS ENUM (
@@ -150,23 +150,23 @@ CREATE TYPE public.maintenance_status AS ENUM (
 -- ============================================================
 
 -- ── Households ───────────────────────────────────────────────
--- Shared by Hungry (pantry/shopping context) AND Roomies
+-- Shared by Pantry (pantry/shopping context) AND HomeBase
 -- (chores/expenses/notices).  One household entry serves both apps.
 CREATE TABLE IF NOT EXISTS public.households (
   id              uuid          PRIMARY KEY DEFAULT uuid_generate_v4(),
   name            text          NOT NULL,
   invite_code     text          NOT NULL UNIQUE
                                 DEFAULT upper(substring(md5(random()::text), 1, 8)),
-  -- Hungry: monthly grocery / household budget
+  -- Pantry: monthly grocery / household budget
   budget_limit    numeric(10,2) NOT NULL DEFAULT 0,
-  -- Roomies: total household income (used for split calculations)
+  -- HomeBase: total household income (used for split calculations)
   monthly_income  numeric(10,2) NOT NULL DEFAULT 0,
   created_at      timestamptz   NOT NULL DEFAULT now()
   -- NOTE: created_by (→ profiles) is added via ALTER below
 );
 
 -- ── Profiles ─────────────────────────────────────────────────
--- One row per AppWare account, merged from all three apps.
+-- One row per LyfeWare account, merged from all three apps.
 -- hungry_settings stores app-specific profile fields as JSONB
 -- to avoid table sprawl.
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -174,38 +174,38 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   -- Identity
   username            text     UNIQUE,
   display_name        text,
-  -- Global AppWare avatar (syncs across all apps by default)
+  -- Global LyfeWare avatar (syncs across all apps by default)
   avatar_url          text,
   -- Per-app avatar overrides — NULL means fall back to global avatar_url
   hungry_avatar_url   text,
-  roomies_avatar_url  text,
-  jukebox_avatar_url  text,
+  homebase_avatar_url  text,
+  vinyl_avatar_url  text,
   bio                 text,
   friend_code         text     UNIQUE
                                DEFAULT upper(substring(md5(random()::text), 1, 8)),
-  -- Jukebox: music platform role + now-playing share
+  -- Vinyl: music platform role + now-playing share
   role                text     NOT NULL DEFAULT 'listener'
                                CHECK (role IN ('listener', 'artist')),
   share_now_playing   boolean  NOT NULL DEFAULT false,
   theme_config        jsonb    NOT NULL
                                DEFAULT '{"era":"2020s","accent":"#E76F51","layout_order":[]}'::jsonb,
-  -- Roomies: reputation karma score + away flag
+  -- HomeBase: reputation karma score + away flag
   karma               integer  NOT NULL DEFAULT 100 CHECK (karma >= 0),
   away                boolean  NOT NULL DEFAULT false,
-  -- Hungry: which household is currently "active" in the pantry context
+  -- Pantry: which household is currently "active" in the pantry context
   active_household_id uuid,    -- FK added after households exists (see ALTER below)
-  -- Hungry: app-specific household override (NULL = share active_household_id with Roomies)
+  -- Pantry: app-specific household override (NULL = share active_household_id with HomeBase)
   hungry_household_id uuid,    -- FK added after households exists (see ALTER below)
-  -- Hungry: personal settings stored as JSONB
+  -- Pantry: personal settings stored as JSONB
   -- Schema: { personal_name, dietary_restrictions[], nutrition_goals{},
   --           age, weight_lbs, height_in, personal_monthly_budget }
   hungry_settings           jsonb    NOT NULL DEFAULT '{}'::jsonb,
   -- Tutorial / onboarding completion flags (NULL = not yet shown)
   hungry_tutorial_done          boolean,
-  has_completed_roomies_tutorial boolean,
-  jukebox_onboarding_done       boolean NOT NULL DEFAULT false,
-  jukebox_tutorial_done         boolean NOT NULL DEFAULT false,
-  -- Jukebox: user vibe profile (focus, favorite genres, preferred era)
+  has_completed_homebase_tutorial boolean,
+  vinyl_onboarding_done       boolean NOT NULL DEFAULT false,
+  vinyl_tutorial_done         boolean NOT NULL DEFAULT false,
+  -- Vinyl: user vibe profile (focus, favorite genres, preferred era)
   vibe_tags                 jsonb,
   -- Ecosystem: favorite genres for cross-app playlist seeding
   favorite_genres           text[]   NOT NULL DEFAULT '{}',
@@ -225,13 +225,13 @@ ALTER TABLE public.profiles
   DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE public.profiles
-  ADD CONSTRAINT profiles_hungry_household_fk
+  ADD CONSTRAINT profiles_pantry_household_fk
   FOREIGN KEY (hungry_household_id)
   REFERENCES public.households(id) ON DELETE SET NULL
   DEFERRABLE INITIALLY DEFERRED;
 
 -- ── Household Members ─────────────────────────────────────────
--- Single junction used by both Hungry and Roomies.
+-- Single junction used by both Pantry and HomeBase.
 CREATE TABLE IF NOT EXISTS public.household_members (
   id            uuid              PRIMARY KEY DEFAULT uuid_generate_v4(),
   household_id  uuid              NOT NULL REFERENCES public.households(id) ON DELETE CASCADE,
@@ -254,7 +254,7 @@ AS $$
 $$;
 
 -- ── Friendships ───────────────────────────────────────────────
--- Unified across all apps using Jukebox model (status column).
+-- Unified across all apps using Vinyl model (status column).
 -- status = 'pending'  → friend request sent
 -- status = 'accepted' → mutual friends
 -- status = 'blocked'  → blocked
@@ -271,13 +271,13 @@ CREATE TABLE IF NOT EXISTS public.friendships (
 );
 
 -- ── Circles (private friend groups) ──────────────────────────
--- From Jukebox; usable cross-app via app_context.
+-- From Vinyl; usable cross-app via app_context.
 CREATE TABLE IF NOT EXISTS public.circles (
   id           uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   owner_id     uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   name         text NOT NULL,
   app_context  text NOT NULL DEFAULT 'global'
-               CHECK (app_context IN ('global', 'hungry', 'jukebox', 'roomies')),
+               CHECK (app_context IN ('global', 'pantry', 'vinyl', 'homebase')),
   created_at   timestamptz NOT NULL DEFAULT now()
 );
 
@@ -290,11 +290,11 @@ CREATE TABLE IF NOT EXISTS public.circle_members (
 
 -- ── Cross-App Activity Feed ───────────────────────────────────
 -- Records user actions across apps so friends can see them.
--- e.g. app='hungry', activity_type='cooked', payload={recipe_name, ...}
+-- e.g. app='pantry', activity_type='cooked', payload={recipe_name, ...}
 CREATE TABLE IF NOT EXISTS public.cross_app_activity (
   id             uuid    PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id        uuid    NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  app            text    NOT NULL CHECK (app IN ('hungry', 'jukebox', 'roomies')),
+  app            text    NOT NULL CHECK (app IN ('pantry', 'vinyl', 'homebase')),
   activity_type  text    NOT NULL,
   payload        jsonb   NOT NULL DEFAULT '{}'::jsonb,
   is_public      boolean NOT NULL DEFAULT false,
@@ -303,7 +303,7 @@ CREATE TABLE IF NOT EXISTS public.cross_app_activity (
 
 
 -- ============================================================
--- PHASE 4 — HUNGRY: Food & Kitchen Management
+-- PHASE 4 — PANTRY: Food & Kitchen Management
 -- ============================================================
 
 -- ── Fridge / Pantry Inventory ─────────────────────────────────
@@ -324,7 +324,7 @@ CREATE TABLE IF NOT EXISTS public.fridge_inventory (
   created_at    timestamptz   NOT NULL DEFAULT now()
 );
 
--- ── Shopping List (Hungry grocery/ingredient list) ────────────
+-- ── Shopping List (Pantry grocery/ingredient list) ────────────
 CREATE TABLE IF NOT EXISTS public.shopping_list (
   id            uuid          PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id       uuid          NOT NULL REFERENCES public.profiles(id)   ON DELETE CASCADE,
@@ -437,7 +437,7 @@ CREATE TABLE IF NOT EXISTS public.potluck_claims (
 
 
 -- ============================================================
--- PHASE 5 — ROOMIES: Household Management
+-- PHASE 5 — HOMEBASE: Household Management
 -- ============================================================
 
 -- ── User Presence Status ──────────────────────────────────────
@@ -458,7 +458,7 @@ CREATE TABLE IF NOT EXISTS public.chores (
   description      text,
   recurrence       public.chore_recurrence NOT NULL DEFAULT 'Weekly',
   rotation_offset  integer                 NOT NULL DEFAULT 0,
-  -- Feature #2: difficulty 1-5 drives BPM seed for Chore-Sync Anthems in Jukebox
+  -- Feature #2: difficulty 1-5 drives BPM seed for Chore-Sync Anthems in Vinyl
   difficulty       integer                 NOT NULL DEFAULT 2 CHECK (difficulty BETWEEN 1 AND 5),
   created_at       timestamptz             NOT NULL DEFAULT now()
 );
@@ -519,8 +519,8 @@ CREATE TABLE IF NOT EXISTS public.subscription_members (
   UNIQUE (subscription_id, profile_id)
 );
 
--- ── Shopping Items (Roomies household-supplies list) ──────────
--- Separate from Hungry's shopping_list — this covers non-food
+-- ── Shopping Items (HomeBase household-supplies list) ──────────
+-- Separate from Pantry's shopping_list — this covers non-food
 -- household supplies (toilet paper, cleaning products, etc.)
 CREATE TABLE IF NOT EXISTS public.shopping_items (
   id            uuid        PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -550,6 +550,15 @@ CREATE TABLE IF NOT EXISTS public.read_acks (
   user_id    uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   read_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (notice_id, user_id)
+);
+
+-- ── Household Bookable Resources ─────────────────────────────
+CREATE TABLE IF NOT EXISTS public.household_resources (
+  id            uuid        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  household_id  uuid        NOT NULL REFERENCES public.households(id) ON DELETE CASCADE,
+  name          text        NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (household_id, name)
 );
 
 -- ── Space Bookings (laundry room, parking, etc.) ──────────────
@@ -625,7 +634,7 @@ CREATE TABLE IF NOT EXISTS public.lockbox (
 
 
 -- ============================================================
--- PHASE 6 — JUKEBOX: Music Social Platform
+-- PHASE 6 — VINYL: Music Social Platform
 -- ============================================================
 
 -- ── Linked Streaming Accounts ─────────────────────────────────
@@ -797,7 +806,7 @@ CREATE TABLE IF NOT EXISTS public.now_playing (
   updated_at   timestamptz NOT NULL DEFAULT now()
 );
 
--- ── Jukebox Privacy Settings ──────────────────────────────────
+-- ── Vinyl Privacy Settings ──────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.privacy_settings (
   user_id           uuid    PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   public_profile    boolean NOT NULL DEFAULT true,
@@ -840,7 +849,7 @@ CREATE TABLE IF NOT EXISTS public.concert_going (
 -- ============================================================
 
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('roomies-property-vault', 'roomies-property-vault', true)
+VALUES ('homebase-property-vault', 'homebase-property-vault', true)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO storage.buckets (id, name, public)
@@ -1034,7 +1043,7 @@ CREATE POLICY "caa: owner writes"
   ON public.cross_app_activity FOR ALL
   USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
--- ── Hungry: fridge_inventory ──────────────────────────────────
+-- ── Pantry: fridge_inventory ──────────────────────────────────
 DROP POLICY IF EXISTS "fi: owner manages personal"     ON public.fridge_inventory;
 DROP POLICY IF EXISTS "fi: household members view shared" ON public.fridge_inventory;
 
@@ -1050,7 +1059,7 @@ CREATE POLICY "fi: household members view shared"
     )
   );
 
--- ── Hungry: shopping_list ─────────────────────────────────────
+-- ── Pantry: shopping_list ─────────────────────────────────────
 DROP POLICY IF EXISTS "sl: owner manages personal"          ON public.shopping_list;
 DROP POLICY IF EXISTS "sl: household members manage shared" ON public.shopping_list;
 
@@ -1071,7 +1080,7 @@ CREATE POLICY "sl: household members manage shared"
     )
   );
 
--- ── Hungry: saved_recipes ─────────────────────────────────────
+-- ── Pantry: saved_recipes ─────────────────────────────────────
 DROP POLICY IF EXISTS "sr: owner manages"       ON public.saved_recipes;
 DROP POLICY IF EXISTS "sr: household can view"  ON public.saved_recipes;
 DROP POLICY IF EXISTS "sr: public visible"      ON public.saved_recipes;
@@ -1090,7 +1099,7 @@ CREATE POLICY "sr: public visible"
   ON public.saved_recipes FOR SELECT
   USING (is_public = true);
 
--- ── Hungry: meal_plans ────────────────────────────────────────
+-- ── Pantry: meal_plans ────────────────────────────────────────
 DROP POLICY IF EXISTS "mp: owner manages"      ON public.meal_plans;
 DROP POLICY IF EXISTS "mp: household can view" ON public.meal_plans;
 
@@ -1105,7 +1114,7 @@ CREATE POLICY "mp: household can view"
     )
   );
 
--- ── Hungry: meal_plan_recipes ─────────────────────────────────
+-- ── Pantry: meal_plan_recipes ─────────────────────────────────
 DROP POLICY IF EXISTS "mpr: via plan access" ON public.meal_plan_recipes;
 
 CREATE POLICY "mpr: via plan access"
@@ -1122,7 +1131,7 @@ CREATE POLICY "mpr: via plan access"
     )
   );
 
--- ── Hungry: chef_history ──────────────────────────────────────
+-- ── Pantry: chef_history ──────────────────────────────────────
 DROP POLICY IF EXISTS "ch: owner manages"   ON public.chef_history;
 DROP POLICY IF EXISTS "ch: public visible"  ON public.chef_history;
 
@@ -1133,7 +1142,7 @@ CREATE POLICY "ch: public visible"
   ON public.chef_history FOR SELECT
   USING (is_public = true);
 
--- ── Hungry: chef_history_photos ───────────────────────────────
+-- ── Pantry: chef_history_photos ───────────────────────────────
 DROP POLICY IF EXISTS "chp: via history owner" ON public.chef_history_photos;
 
 CREATE POLICY "chp: via history owner"
@@ -1145,7 +1154,7 @@ CREATE POLICY "chp: via history owner"
     )
   );
 
--- ── Hungry: potluck_events ────────────────────────────────────
+-- ── Pantry: potluck_events ────────────────────────────────────
 DROP POLICY IF EXISTS "pe: authenticated can view"   ON public.potluck_events;
 DROP POLICY IF EXISTS "pe: authenticated can create" ON public.potluck_events;
 DROP POLICY IF EXISTS "pe: host can update"          ON public.potluck_events;
@@ -1160,7 +1169,7 @@ CREATE POLICY "pe: host can update"
 CREATE POLICY "pe: host can delete"
   ON public.potluck_events FOR DELETE USING (host_id = auth.uid());
 
--- ── Hungry: potluck_items ─────────────────────────────────────
+-- ── Pantry: potluck_items ─────────────────────────────────────
 DROP POLICY IF EXISTS "pi: household members manage" ON public.potluck_items;
 DROP POLICY IF EXISTS "pi2: authenticated manages"   ON public.potluck_items;
 
@@ -1168,27 +1177,27 @@ CREATE POLICY "pi2: authenticated manages"
   ON public.potluck_items FOR ALL
   USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
 
--- ── Hungry: potluck_claims ────────────────────────────────────
+-- ── Pantry: potluck_claims ────────────────────────────────────
 DROP POLICY IF EXISTS "pc: claimer manages" ON public.potluck_claims;
 
 CREATE POLICY "pc: claimer manages"
   ON public.potluck_claims FOR ALL
   USING (claimed_by = auth.uid()) WITH CHECK (claimed_by = auth.uid());
 
--- ── Roomies: user_presence ────────────────────────────────────
+-- ── HomeBase: user_presence ────────────────────────────────────
 DROP POLICY IF EXISTS "up: anyone views"  ON public.user_presence;
 DROP POLICY IF EXISTS "up: owner manages" ON public.user_presence;
 
 CREATE POLICY "up: anyone views"  ON public.user_presence FOR SELECT USING (true);
 CREATE POLICY "up: owner manages" ON public.user_presence FOR ALL   USING (auth.uid() = profile_id);
 
--- ── Roomies: chores ───────────────────────────────────────────
+-- ── HomeBase: chores ───────────────────────────────────────────
 DROP POLICY IF EXISTS "ch2: members manage" ON public.chores;
 
 CREATE POLICY "ch2: members manage"
   ON public.chores FOR ALL USING (is_household_member(household_id));
 
--- ── Roomies: chore_assignments / karma_marketplace ────────────
+-- ── HomeBase: chore_assignments / karma_marketplace ────────────
 -- Permissive: any authenticated user (needed for swap/auction flows)
 DROP POLICY IF EXISTS "ca: open"  ON public.chore_assignments;
 DROP POLICY IF EXISTS "km: open"  ON public.karma_marketplace;
@@ -1196,7 +1205,7 @@ DROP POLICY IF EXISTS "km: open"  ON public.karma_marketplace;
 CREATE POLICY "ca: open" ON public.chore_assignments   FOR ALL USING (auth.uid() IS NOT NULL);
 CREATE POLICY "km: open" ON public.karma_marketplace   FOR ALL USING (auth.uid() IS NOT NULL);
 
--- ── Roomies: transactions / splits ───────────────────────────
+-- ── HomeBase: transactions / splits ───────────────────────────
 DROP POLICY IF EXISTS "tx: members manage"     ON public.transactions;
 DROP POLICY IF EXISTS "splits: open"           ON public.transaction_splits;
 
@@ -1205,7 +1214,7 @@ CREATE POLICY "tx: members manage"
 CREATE POLICY "splits: open"
   ON public.transaction_splits FOR ALL USING (auth.uid() IS NOT NULL);
 
--- ── Roomies: subscriptions / members ─────────────────────────
+-- ── HomeBase: subscriptions / members ─────────────────────────
 DROP POLICY IF EXISTS "subs: members manage"    ON public.subscriptions;
 DROP POLICY IF EXISTS "sub_m: open"             ON public.subscription_members;
 
@@ -1214,13 +1223,13 @@ CREATE POLICY "subs: members manage"
 CREATE POLICY "sub_m: open"
   ON public.subscription_members FOR ALL USING (auth.uid() IS NOT NULL);
 
--- ── Roomies: shopping_items ───────────────────────────────────
+-- ── HomeBase: shopping_items ───────────────────────────────────
 DROP POLICY IF EXISTS "si: members manage" ON public.shopping_items;
 
 CREATE POLICY "si: members manage"
   ON public.shopping_items FOR ALL USING (is_household_member(household_id));
 
--- ── Roomies: notices / read_acks ─────────────────────────────
+-- ── HomeBase: notices / read_acks ─────────────────────────────
 DROP POLICY IF EXISTS "n: members manage"  ON public.notices;
 DROP POLICY IF EXISTS "ack: open"          ON public.read_acks;
 
@@ -1229,7 +1238,7 @@ CREATE POLICY "n: members manage"
 CREATE POLICY "ack: open"
   ON public.read_acks FOR ALL USING (auth.uid() IS NOT NULL);
 
--- ── Roomies: bookings, guest_logs, maintenance, pets ──────────
+-- ── HomeBase: bookings, guest_logs, maintenance, pets ──────────
 DROP POLICY IF EXISTS "bk: members manage"   ON public.bookings;
 DROP POLICY IF EXISTS "gl: members manage"   ON public.guest_logs;
 DROP POLICY IF EXISTS "mt: members manage"   ON public.maintenance_tickets;
@@ -1240,27 +1249,27 @@ CREATE POLICY "gl: members manage" ON public.guest_logs           FOR ALL USING 
 CREATE POLICY "mt: members manage" ON public.maintenance_tickets  FOR ALL USING (is_household_member(household_id));
 CREATE POLICY "pl: members manage" ON public.pet_logs             FOR ALL USING (is_household_member(household_id));
 
--- ── Roomies: coliving_agreements / signatures ─────────────────
+-- ── HomeBase: coliving_agreements / signatures ─────────────────
 DROP POLICY IF EXISTS "ca2: members manage" ON public.coliving_agreements;
 DROP POLICY IF EXISTS "sig: members manage" ON public.agreement_signatures;
 
 CREATE POLICY "ca2: members manage" ON public.coliving_agreements  FOR ALL USING (is_household_member(household_id));
 CREATE POLICY "sig: members manage" ON public.agreement_signatures FOR ALL USING (is_household_member(household_id));
 
--- ── Roomies: lockbox ─────────────────────────────────────────
+-- ── HomeBase: lockbox ─────────────────────────────────────────
 DROP POLICY IF EXISTS "lb: members manage" ON public.lockbox;
 
 CREATE POLICY "lb: members manage"
   ON public.lockbox FOR ALL USING (is_household_member(household_id));
 
--- ── Jukebox: linked_accounts ──────────────────────────────────
+-- ── Vinyl: linked_accounts ──────────────────────────────────
 DROP POLICY IF EXISTS "la: owner manages" ON public.linked_accounts;
 
 CREATE POLICY "la: owner manages"
   ON public.linked_accounts FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ── Jukebox: album_ratings ────────────────────────────────────
+-- ── Vinyl: album_ratings ────────────────────────────────────
 DROP POLICY IF EXISTS "ar: public read"   ON public.album_ratings;
 DROP POLICY IF EXISTS "ar: owner manages" ON public.album_ratings;
 
@@ -1269,7 +1278,7 @@ CREATE POLICY "ar: owner manages"
   ON public.album_ratings FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ── Jukebox: drops ────────────────────────────────────────────
+-- ── Vinyl: drops ────────────────────────────────────────────
 DROP POLICY IF EXISTS "dr: public read"    ON public.drops;
 DROP POLICY IF EXISTS "dr: artist manages" ON public.drops;
 
@@ -1278,7 +1287,7 @@ CREATE POLICY "dr: artist manages"
   ON public.drops FOR ALL
   USING (auth.uid() = artist_id) WITH CHECK (auth.uid() = artist_id);
 
--- ── Jukebox: time_capsules ────────────────────────────────────
+-- ── Vinyl: time_capsules ────────────────────────────────────
 DROP POLICY IF EXISTS "tc: owner and post-unlock" ON public.time_capsules;
 DROP POLICY IF EXISTS "tc: owner inserts"         ON public.time_capsules;
 
@@ -1289,7 +1298,7 @@ CREATE POLICY "tc: owner inserts"
   ON public.time_capsules FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- ── Jukebox: ticket_stubs ─────────────────────────────────────
+-- ── Vinyl: ticket_stubs ─────────────────────────────────────
 DROP POLICY IF EXISTS "ts: public read"   ON public.ticket_stubs;
 DROP POLICY IF EXISTS "ts: owner manages" ON public.ticket_stubs;
 
@@ -1298,7 +1307,7 @@ CREATE POLICY "ts: owner manages"
   ON public.ticket_stubs FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ── Jukebox: privacy_settings ────────────────────────────────
+-- ── Vinyl: privacy_settings ────────────────────────────────
 DROP POLICY IF EXISTS "ps: owner manages" ON public.privacy_settings;
 DROP POLICY IF EXISTS "ps: public read"   ON public.privacy_settings;
 
@@ -1308,7 +1317,7 @@ CREATE POLICY "ps: owner manages"
 CREATE POLICY "ps: public read"
   ON public.privacy_settings FOR SELECT USING (true);
 
--- ── Jukebox: concert_wishlist ─────────────────────────────────
+-- ── Vinyl: concert_wishlist ─────────────────────────────────
 DROP POLICY IF EXISTS "cw: privacy-gated read" ON public.concert_wishlist;
 DROP POLICY IF EXISTS "cw: owner manages"      ON public.concert_wishlist;
 
@@ -1326,7 +1335,7 @@ CREATE POLICY "cw: owner manages"
   ON public.concert_wishlist FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ── Jukebox: concert_going ────────────────────────────────────
+-- ── Vinyl: concert_going ────────────────────────────────────
 DROP POLICY IF EXISTS "cg: public read"   ON public.concert_going;
 DROP POLICY IF EXISTS "cg: owner manages" ON public.concert_going;
 
@@ -1335,7 +1344,7 @@ CREATE POLICY "cg: owner manages"
   ON public.concert_going FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ── Jukebox: messages ─────────────────────────────────────────
+-- ── Vinyl: messages ─────────────────────────────────────────
 DROP POLICY IF EXISTS "msg: participants read" ON public.messages;
 DROP POLICY IF EXISTS "msg: participants send" ON public.messages;
 
@@ -1357,7 +1366,7 @@ CREATE POLICY "msg: participants send"
     )
   );
 
--- ── Jukebox: now_playing ──────────────────────────────────────
+-- ── Vinyl: now_playing ──────────────────────────────────────
 DROP POLICY IF EXISTS "np: public read"   ON public.now_playing;
 DROP POLICY IF EXISTS "np: owner manages" ON public.now_playing;
 
@@ -1376,13 +1385,13 @@ DROP POLICY IF EXISTS "st: chef photos read"   ON storage.objects;
 DROP POLICY IF EXISTS "st: chef photos write"  ON storage.objects;
 
 CREATE POLICY "st: vault read"
-  ON storage.objects FOR SELECT USING (bucket_id = 'roomies-property-vault');
+  ON storage.objects FOR SELECT USING (bucket_id = 'homebase-property-vault');
 CREATE POLICY "st: vault insert"
   ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'roomies-property-vault' AND auth.uid() IS NOT NULL);
+  WITH CHECK (bucket_id = 'homebase-property-vault' AND auth.uid() IS NOT NULL);
 CREATE POLICY "st: vault delete"
   ON storage.objects FOR DELETE
-  USING (bucket_id = 'roomies-property-vault' AND auth.uid() IS NOT NULL);
+  USING (bucket_id = 'homebase-property-vault' AND auth.uid() IS NOT NULL);
 CREATE POLICY "st: avatars read"
   ON storage.objects FOR SELECT USING (bucket_id = 'user-avatars');
 CREATE POLICY "st: avatars write"
@@ -1400,7 +1409,7 @@ CREATE POLICY "st: chef photos write"
 -- ============================================================
 
 -- Auto-create profile on every new sign-up
--- Works for email/password, Google OAuth, and AppWare SSO token flow.
+-- Works for email/password, Google OAuth, and LyfeWare SSO token flow.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -1454,7 +1463,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Auto-create privacy_settings for every new Jukebox profile row
+-- Auto-create privacy_settings for every new Vinyl profile row
 CREATE OR REPLACE FUNCTION public.handle_new_profile_privacy()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN

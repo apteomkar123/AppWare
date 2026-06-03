@@ -1,4 +1,4 @@
-2. AI Household Assistant
+﻿2. AI Household Assistant
 
 You already have the data.
 
@@ -6,7 +6,7 @@ Imagine:
 
 "Your fridge has chicken that expires tomorrow. Sarah hasn't done dishes in 3 days. Tonight's household mood is upbeat. Want me to schedule Taco Night?"
 
-The AI becomes the glue between Hungry, Roomies, and Jukebox.
+The AI becomes the glue between Pantry, HomeBase, and Vinyl.
 
 This is much harder to copy than recipe generation alone.
 
@@ -82,7 +82,7 @@ Household analytics
 
 Charge property managers per unit.
 
-The Roomies infrastructure already points in this direction.
+The HomeBase infrastructure already points in this direction.
 
 7. AI Meal Budget Mode
 
@@ -141,7 +141,7 @@ This turns a boring process into an event.
 
 10. Spotify Wrapped for Houses
 
-You mentioned AppWare Wrap.
+You mentioned LyfeWare Wrap.
 
 Go much deeper.
 
@@ -177,7 +177,7 @@ Funny + useful.
 
 Every house develops history.
 
-AppWare automatically records events.
+LyfeWare automatically records events.
 
 Examples:
 
@@ -239,7 +239,7 @@ These feel meaningful.
 
 My favorite long-term idea.
 
-Imagine opening AppWare and seeing:
+Imagine opening LyfeWare and seeing:
 
 Today's Briefing
 
@@ -257,7 +257,7 @@ Recommended dinner: Chicken Tacos.
 
 Suggested soundtrack: Indie Evening.
 
-This is where AppWare stops being three apps and starts becoming a living system.
+This is where LyfeWare stops being three apps and starts becoming a living system.
 
 16. Secret Weapon: Relationship Mode
 
@@ -289,15 +289,15 @@ The app detects finals week based on the university calendar.
 
 Automatically changes behavior:
 
-Roomies
+HomeBase
 Chore expectations lowered
 Critical chores only
 Study room reservations
-Hungry
+Pantry
 Quick meals under 15 minutes
 Budget meals
 Meal prep suggestions
-Jukebox
+Vinyl
 Focus playlists
 Study sessions
 Pomodoro music
@@ -448,7 +448,7 @@ Campus Founders
 Per school:
 
 5–10 students
-Free AppWare Plus
+Free LyfeWare Plus
 Exclusive badge
 Early feature access
 
@@ -460,7 +460,7 @@ If they do:
 
 Lifetime Plus
 Campus Founder badge
-AppWare merch
+LyfeWare merch
 
 At 10 campuses, that's potentially hundreds of users.
 
@@ -502,7 +502,7 @@ Expense splitting
 Chores
 Music
 
-Everything AppWare does.
+Everything LyfeWare does.
 
 Create:
 
@@ -555,15 +555,15 @@ Boring.
 
 Instead:
 
-Hungry
+Pantry
 
 "You need all household members to unlock Meal Analytics."
 
-Roomies
+HomeBase
 
 "You need 3 members to activate House Karma."
 
-Jukebox
+Vinyl
 
 "Create a shared listening room."
 
@@ -605,7 +605,7 @@ Don't say:
 
 Say:
 
-"AppWare helped our household save $143, cook 32 meals, and stop arguing about chores."
+"LyfeWare helped our household save $143, cook 32 meals, and stop arguing about chores."
 
 People buy outcomes, not features.
 
@@ -691,7 +691,7 @@ Could become your highest-converting plan.
 
 This could become huge.
 
-Hungry generates:
+Pantry generates:
 
 Shopping list
 
@@ -709,7 +709,7 @@ Users don't feel like they're paying.
 
 When students are lazy:
 
-Hungry says:
+Pantry says:
 
 No ingredients available.
 
@@ -733,7 +733,7 @@ Students see offers.
 
 Businesses pay.
 
-7. Premium AppWare Wrap
+7. Premium LyfeWare Wrap
 
 Regular wrap:
 
@@ -838,7 +838,7 @@ People pay for life transitions.
 
 13. Local Commerce Layer
 
-If Hungry knows users need groceries and Roomies knows they need household supplies:
+If Pantry knows users need groceries and HomeBase knows they need household supplies:
 
 Partner with:
 
@@ -868,7 +868,7 @@ This is something people could justify paying for every month.
 
 This is where real revenue can appear later.
 
-Apartment complexes buy AppWare for residents.
+Apartment complexes buy LyfeWare for residents.
 
 Features:
 

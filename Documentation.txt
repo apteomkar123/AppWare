@@ -1,27 +1,220 @@
+﻿================================================================================
+LYFEWARE ECOSYSTEM — DOCUMENTATION
+Last updated: 2026-06-03
 ================================================================================
-APPWARE ECOSYSTEM — DOCUMENTATION
-Last updated: 2026-06-02
+
+SESSION 20 CHANGES (2026-06-03) — App rename + Non-food cross-app sync
+------------------------------
+
+1. FULL ECOSYSTEM RENAME
+   All four apps and the parent platform have been renamed throughout every
+   file (148 files modified by bulk replace + 9 file renames):
+
+   AppWare   → LyfeWare
+   Hungry    → Pantry
+   Roomies   → HomeBase
+   Jukebox   → Vinyl
+
+   Protected from rename (database column names, must stay for Supabase queries):
+     - hungry_tutorial_done  (profiles table column)
+     - hungry_household_id   (profiles table column)
+     - hungry_avatar_url     (profiles table column)
+     - hungry_settings       (profiles table column)
+     - roomies-app           (Netlify build base path)
+
+   File renames:
+     - AppWareTab.jsx          → LyfeWareTab.jsx
+     - useAppWareSSO.js        → useLyfeWareSSO.js   (Pantry)
+     - useAppWareSSO.ts        → useLyfeWareSSO.ts   (Vinyl)
+     - JukeboxMesh.tsx         → VinylMesh.tsx
+     - Jukebox_Feature_Roadmap.md → Vinyl_Feature_Roadmap.md
+     - AppWareAuthIntegration.md → LyfeWareAuthIntegration.md (all apps)
+     - AppWare.md              → LyfeWare.md
+
+   localStorage migration added to Pantry/src/main.jsx:
+   Old keys are copied to new keys on first load, then deleted. No user
+   data is lost. Mapping:
+     hungry_cat_overrides     → pantry_cat_overrides
+     hungry_quantities        → pantry_quantities
+     hungry_pantry_v1         → pantry_pantry_v1
+     hungry_shopping_v1       → pantry_shopping_v1
+     hungry_chef_history      → pantry_chef_history
+     hungry_default_shopping_dest → pantry_default_shopping_dest
+
+   Cross-app internal source marker renamed:
+     _source: 'roomies'  → _source: 'homebase'
+     _roomies_id         → _homebase_id
+   (These are only used in Pantry's useInventory.js for routing shopping
+   list mutations to the correct table, never stored in the DB.)
+
+2. NON-FOOD ITEM CROSS-APP SYNC  (Pantry → HomeBase)
+   When a user scans a receipt or looks up a barcode in Pantry, the system
+   now classifies each item as food or non-food:
+
+   Receipt scan (scan-receipt.js Netlify function):
+     - Prompt updated to return { foodItems: [...], nonFoodItems: [...] }
+     - Response is backward-compatible (falls back to items[] for old clients)
+
+   Barcode lookup (useInventory.js handleBarcodeLookup):
+     - isNonFoodProduct() checks Open Food Facts categories_tags + product
+       name for cleaning, beauty, household patterns
+     - Non-food products are routed to household_inventory instead of pantry
+
+   Cross-app insert (useInventory.js handleFileUpload + handleBarcodeLookup):
+     - Non-food items → supabase.from('household_inventory').insert(...)
+     - Category auto-classified via classifyNonFoodCategory() helper:
+         Cleaning / Paper Goods / Toiletries / Laundry / Other
+     - UI notification: violet toast "X non-food items added to HomeBase
+       inventory" shown in PantryManager.jsx for 6 seconds
+
+   Files modified:
+     - Pantry/netlify/functions/scan-receipt.js
+     - Pantry/src/components/useInventory.js
+     - Pantry/src/components/PantryManager.jsx
+     - Pantry/src/App.jsx
+
+3. HOMEBASE INVENTORY PAGE UPDATE
+   - Section label changed from "Pantry (from Pantry)" to "Food Items (synced from Pantry)"
+   - Empty state text improved: "No food items yet. Add food in the Pantry app to see it here."
+
+KNOWN LIMITATIONS / NOT DONE
+------------------------------
+- Netlify site URL authappware.netlify.app still points to the old name —
+  user needs to rename the Netlify site in their Netlify dashboard to
+  authlyfeware.netlify.app and update VITE_AUTH_URL env var in all apps.
+- Physical folder names (Hungry/, Roomies/, Jukebox/, AppWare Auth/) were
+  NOT renamed — renaming would break Netlify build configs and git history.
+  These are infrastructure paths, not display names.
+- PDFs (AppWare_Ecosystem_Master_Plan.pdf, Hungry_Feature_Overview.pdf) were
+  not modified — cannot edit PDF content programmatically.
+- Vinyl (Jukebox) app Expo push notification identifiers in app.json may
+  still reference old bundle IDs if those were set.
+
+================================================================================
+
+SESSION 22 CHANGES (2026-06-03) — Vinyl/Pantry/HomeBase bug fixes
+------------------------------
+
+VINYL (Jukebox app)
+1. HAMBURGER BUTTON — DESKTOP ONLY
+   NavDrawer.tsx: hamburger button now only renders on desktop web
+   (Platform.OS === 'web' && screenWidth >= 768). Mobile users swipe from
+   the left edge to open the drawer — no button needed on small screens.
+
+2. ADD TO SPOTIFY BUTTON FIXED (AI Playlist Generator)
+   AIPlaylistScreen.tsx: added `user-modify-playback-state` to SCOPES array
+   in spotify.ts. Added distinct error messages for expired session,
+   missing permission, and track-add failure.
+
+3. PLAYLIST GENERATION DIVERSITY
+   AIPlaylistScreen.tsx: multi-query fan-out — 3 search terms per mood, up to
+   4 parallel searches, results interleaved. Same artist skipped if in last 3
+   tracks to prevent repetitive artist runs.
+
+4. SHARE CARD BUTTON FIXED
+   ShareableCard.tsx: added web platform check before ViewShot. Web path uses
+   navigator.share (Web Share API) with navigator.clipboard text fallback.
+   Native path unchanged (ViewShot PNG + expo-sharing).
+
+5. VINYL SHELF ALBUMS SHOWING AS ALPHANUMERIC IDs
+   ProfileScreen.tsx: regex check `/^[a-zA-Z0-9]{10,}$/` detects raw Spotify
+   IDs and treats them as null. Display falls back to "Unknown Album". Record
+   initial letter falls back to artist name or "?".
+
+6. PLAY/PAUSE/PREV/NEXT BUTTONS DOING NOTHING
+   spotify.ts: added `user-modify-playback-state` to OAuth scopes. This
+   scope is required for Spotify playback control API endpoints. Users who
+   reconnected Spotify before this fix need to reconnect to pick up the new
+   scope.
+
+7. VINYL MESH — REAL BPM + COLOR BY VIBE
+   SpotifyDataContext.tsx: added `updated_at: new Date().toISOString()` to
+   cross_app_activity upsert so the time filter works (upserted rows keep
+   static created_at). VinylMesh.tsx: extended activity window to 24h for
+   cross_app_activity; added MOOD_COLOR map (euphoric=amber, happy=green,
+   intense=red, melancholic=blue, calm=purple); node and connection line
+   colors driven by mood.
+
+8. VINYL MESH CLEARING AFTER STOP
+   SpotifyDataContext.tsx: when fetchSpotifyCurrentTrack returns null
+   (nothing playing), now deletes the user's `now_playing` row. VinylMesh
+   uses a strict 30-min window on now_playing so stopped users disappear.
+
+9. ARTIST PAGE WHITE SCREEN CRASH
+   ArtistDetailScreen.tsx: changed `.single()` to `.maybeSingle()` on the
+   day_one_registry query. `.single()` throws an unhandled rejection when no
+   row exists, crashing the screen to blank. `.maybeSingle()` returns null
+   instead.
+
+PANTRY (Hungry app)
+10. SHOPPING LIST HOUSEHOLD TOGGLE REMOVED
+    App.jsx: removed shopHHFilter state and All/HH toggle buttons. Shopping
+    list is now filtered directly by activeHousehold.id from useUser() context.
+    Header shows: multiple households → pill buttons to switch; single
+    household → info badge; no household → informational text.
+
+11. NUTRIENT ANALYSIS CARD OFF SCREEN
+    AnalyticsDashboard.jsx: root cause was backdrop-filter:blur on parent
+    section, which creates a new CSS containing block for `fixed` positioned
+    children. Fixed by moving the modal outside all backdrop-filter containers
+    (placed at end of component return). Replaced Tailwind backdrop-blur-sm
+    class with inline style to avoid creating a new stacking context.
+    Also fixed Tailwind canonical classes: z-[9999]→z-9999, rounded-[2rem]→rounded-4xl.
+
+12. iOS HOME SCREEN ICON FONT
+    public/icon.svg: changed @import url() to @font-face { src: url(woff2) }
+    for reliable Pacifico loading; corrected text "Hungry"→"Pantry".
+    Added public/generate-icons.html: one-time browser tool using Canvas API
+    with document.fonts.ready to generate icon-192.png and icon-512.png with
+    correct Pacifico font. User opens this in a browser and downloads both files.
+
+HOMEBASE (Roomies app)
+13. TAP BLOCKS TO CREATE BOOKING
+    Bookings.tsx: empty hour blocks in the timeline are now clickable.
+    onClick on empty blocks calls openBookingForm(res, h) which pre-fills
+    the booking form (resource + start hour) and scrolls to top. Hover
+    highlight (rgba blue) indicates blocks are clickable.
+
+14. REMOVE DEFAULT UTILITIES / CLEAN SLATE
+    Bookings.tsx: hardcoded RESOURCES constant removed. Resources now loaded
+    from new `household_resources` table (Supabase) per household. New
+    "Manage" panel lets users add/remove resources. New households start with
+    empty state and an "Add First Resource" call-to-action.
+    appware_unified_schema.sql: added household_resources table with UNIQUE
+    (household_id, name) constraint.
+
+NOT DONE / LIMITATIONS
+- icon-192.png and icon-512.png in Pantry/public/ still have the old pre-
+  Pacifico icons. User must open public/generate-icons.html in a browser to
+  regenerate them (requires browser canvas + Google Fonts access).
+- HomeBase household_resources table must be created in Supabase by running
+  the new CREATE TABLE block from appware_unified_schema.sql in the
+  Dashboard SQL Editor.
+- Spotify playback controls (play/pause/prev/next) require users who
+  connected Spotify before this session to disconnect and reconnect so the
+  `user-modify-playback-state` scope is granted.
+
 ================================================================================
 
 SESSION 19 CHANGES (2026-06-02) — Household Mode fix in HouseholdTab
 ------------------------------
 
-BUG FIX — Household Mode not visible in Hungry Household tab
+BUG FIX — Household Mode not visible in Pantry Household tab
   HouseholdSettings.jsx was correctly implementing the Household Mode toggle, but
   was never rendered. App.jsx rendered HouseholdTab for the 'household' tab, not
-  HouseholdSettings. The Household Mode section (Shared with Roomies / Hungry-Specific)
+  HouseholdSettings. The Household Mode section (Shared with HomeBase / Pantry-Specific)
   was therefore invisible to users.
 
   Fix:
-    Hungry/src/components/HouseholdTab.jsx
+    Pantry/src/components/HouseholdTab.jsx
       - Added Lock to lucide-react imports
-      - Added hungryHouseholdId, isHungryShared, handleSetHungrySpecificHousehold,
-        handleClearHungryHousehold from useUser() context
+      - Added pantryHouseholdId, isPantryShared, handleSetPantrySpecificHousehold,
+        handleClearPantryHousehold from useUser() context
       - Added Household Mode section at the top of the main return (above household selector),
         mirroring the exact UI from HouseholdSettings.jsx:
-          · "Shared with Roomies" button (sky-500 when active)
-          · "Hungry-Specific" button (sky-400 when active)
-          · Sub-picker showing all households when Hungry-Specific is selected
+          · "Shared with HomeBase" button (sky-500 when active)
+          · "Pantry-Specific" button (sky-400 when active)
+          · Sub-picker showing all households when Pantry-Specific is selected
           · Warning message when only one household exists
 
 WHAT COULD NOT BE DONE
@@ -32,73 +225,73 @@ WHAT COULD NOT BE DONE
 SESSION 16 CHANGES (2026-06-02) — Shared Households / Grocery Lists + Nav Overhaul + Ecosystem Tutorials
 ------------------------------
 
-FEATURE 1 — Shared Households & Grocery Lists (Hungry + Roomies)
-  By default, Hungry and Roomies share the same household (via profiles.active_household_id).
-  The grocery lists (Hungry: shopping_list, Roomies: shopping_items) now cross-read each
+FEATURE 1 — Shared Households & Grocery Lists (Pantry + HomeBase)
+  By default, Pantry and HomeBase share the same household (via profiles.active_household_id).
+  The grocery lists (Pantry: shopping_list, HomeBase: shopping_items) now cross-read each
   other for the shared household, so items show up in both apps with source badges.
 
   Implementation:
-    Hungry/src/components/UserContext.jsx
-      - Added hungryHouseholdId state (loaded from profiles.hungry_household_id)
-      - Added computed hungryHousehold (= specific if set, else activeHousehold)
-      - Added isHungryShared boolean (true when hungry_household_id is NULL)
-      - Added handleSetHungrySpecificHousehold(id) and handleClearHungryHousehold()
-      - household prop in context now returns hungryHousehold (app-aware)
+    Pantry/src/components/UserContext.jsx
+      - Added pantryHouseholdId state (loaded from profiles.hungry_household_id)
+      - Added computed pantryHousehold (= specific if set, else activeHousehold)
+      - Added isPantryShared boolean (true when hungry_household_id is NULL)
+      - Added handleSetPantrySpecificHousehold(id) and handleClearPantryHousehold()
+      - household prop in context now returns pantryHousehold (app-aware)
 
-    Hungry/src/App.jsx
-      - MainApp now pulls hungryHousehold from useUser() and passes to useInventory()
+    Pantry/src/App.jsx
+      - MainApp now pulls pantryHousehold from useUser() and passes to useInventory()
 
-    Hungry/src/components/useInventory.js
+    Pantry/src/components/useInventory.js
       - fetchAppData cross-reads shopping_items for the same household, mapping
         title→item_name, purchased→is_completed, urgent→is_urgent, added_by→user_id
-      - Roomies items get _source:'roomies' and _roomies_id for dispatch routing
+      - HomeBase items get _source:'homebase' and _homebase_id for dispatch routing
       - handleToggleShoppingCompleted, handleClearShoppingItem, handleRenameShoppingItem,
         handleMoveShoppingItem, handleClearAllShoppingItems, handleMarkAllShoppingCompleted
         all check _source and dispatch to the correct table/column
 
-    Hungry/src/components/HouseholdSettings.jsx
-      - New "Household Mode" section at top: Shared with Roomies / Hungry-Specific toggle
-      - Hungry-Specific mode shows a household picker for all the user's households
+    Pantry/src/components/HouseholdSettings.jsx
+      - New "Household Mode" section at top: Shared with HomeBase / Pantry-Specific toggle
+      - Pantry-Specific mode shows a household picker for all the user's households
       - Shared mode clears hungry_household_id in profiles
 
-    Roomies/roomies-app/src/pages/Shopping.tsx
+    HomeBase/__HOMEBASEAPP__/src/pages/Shopping.tsx
       - load() now also fetches shopping_list items for the same household
       - Maps item_name→title, is_completed→purchased, is_urgent→urgent
       - togglePurchased and deleteItem dispatch to the correct table
       - Real-time subscription covers both tables
-      - HUNGRY badge renders on cross-app items
+      - PANTRY badge renders on cross-app items
       - Empty state message updated
 
-  DB: Hungry/supabase/migrations/009_hungry_household_id.sql
+  DB: Pantry/supabase/migrations/009_hungry_household_id.sql
     ALTER TABLE profiles ADD COLUMN hungry_household_id uuid REFERENCES households(id)
-  Schema: appware_unified_schema.sql updated with new column and FK constraint
+  Schema: lyfeware_unified_schema.sql updated with new column and FK constraint
 
-FEATURE 2 — Hungry-style Floating Nav in Roomies
-  Replaced the fixed left sidebar with a floating glass drawer identical to Hungry's nav:
+FEATURE 2 — Pantry-style Floating Nav in HomeBase
+  Replaced the fixed left sidebar with a floating glass drawer identical to Pantry's nav:
   hamburger button (fixed top-left), backdrop overlay on open, swipe-right-from-left-edge
   to open, swipe-left to close, Lucide icons (22px), animated scale+opacity transition.
 
   Implementation:
-    Roomies/roomies-app/src/components/ui/NavBar.tsx — full rewrite
+    HomeBase/__HOMEBASEAPP__/src/components/ui/NavBar.tsx — full rewrite
       - Replaced emoji icons with Lucide icons (Home, CheckSquare, DollarSign, Bell,
         Calendar, Wrench, ShoppingCart, PawPrint, Users, Lock, Star, Settings)
       - Added navOpen state + touch swipe gesture handlers via document event listeners
       - Hamburger button always visible at fixed top-left (z-index 60)
       - Backdrop (z-index 50) + drawer (z-index 55) in overlay positions
-      - Drawer uses inline styles matching Hungry's glass/blur/rounded-32 aesthetic
+      - Drawer uses inline styles matching Pantry's glass/blur/rounded-32 aesthetic
       - Badge count display preserved for Notices and Maintenance
 
-    Roomies/roomies-app/src/index.css — removed nav-sidebar fixed sidebar styles
+    HomeBase/__HOMEBASEAPP__/src/index.css — removed nav-sidebar fixed sidebar styles
       - .app-content margin-left removed (nav is now an overlay, no content offset)
 
-    Roomies/roomies-app/package.json — lucide-react added
+    HomeBase/__HOMEBASEAPP__/package.json — lucide-react added
 
-FEATURE 3 — Hungry-style Floating Nav in Jukebox (React Native)
+FEATURE 3 — Pantry-style Floating Nav in Vinyl (React Native)
   Implemented a custom NavDrawer overlay component using Animated + PanResponder +
-  BlurView for the same floating glass drawer mechanics, since Jukebox is React Native.
+  BlurView for the same floating glass drawer mechanics, since Vinyl is React Native.
 
   Implementation:
-    Jukebox/src/components/NavDrawer.tsx — new component
+    Vinyl/src/components/NavDrawer.tsx — new component
       - Hamburger button (fixed top-left, Platform-aware safe area)
       - Animated slide-in/out from left with spring animation
       - PanResponder for swipe-to-close gesture inside drawer
@@ -106,44 +299,44 @@ FEATURE 3 — Hungry-style Floating Nav in Jukebox (React Native)
       - BlurView for glass effect; theme-aware colors from useTheme()
       - 5 nav items matching existing Tab.Navigator screens
 
-    Jukebox/src/navigation/AppNavigator.tsx
+    Vinyl/src/navigation/AppNavigator.tsx
       - Tab.Navigator wrapped in View with NavDrawer as sibling overlay
 
 FEATURE 4 — Ecosystem Steps in All App Tutorials
-  Hungry TutorialOverlay.jsx — 3 new steps added at end:
-    "AppWare Ecosystem", "Shared Grocery List", "Kitchen Concert & Mood Food"
+  Pantry TutorialOverlay.jsx — 3 new steps added at end:
+    "LyfeWare Ecosystem", "Shared Grocery List", "Kitchen Concert & Mood Food"
 
-  Roomies Tutorial.tsx — 2 new steps added:
-    "Shared Grocery List with Hungry", "Chore Sync Anthems"
+  HomeBase Tutorial.tsx — 2 new steps added:
+    "Shared Grocery List with Pantry", "Chore Sync Anthems"
     TutorialContext TUTORIAL_TOTAL: 9 → 11
 
-  Jukebox InteractiveTour.tsx — 2 new steps added at end:
-    "Kitchen Concert", "AppWare Ecosystem"
+  Vinyl InteractiveTour.tsx — 2 new steps added at end:
+    "Kitchen Concert", "LyfeWare Ecosystem"
 
 WHAT COULD NOT BE DONE
-  - Jukebox NavDrawer tested only in code; requires Expo build to verify swipe
+  - Vinyl NavDrawer tested only in code; requires Expo build to verify swipe
     mechanics on physical device (PanResponder behavior differs device-to-device).
-  - Roomies Tutorial nav step references tut-navbar ID — this now targets the
+  - HomeBase Tutorial nav step references tut-navbar ID — this now targets the
     hamburger button (id="tut-nav-open") in the new drawer nav; tutorial step
     desc was not updated to reflect the new nav mechanic (floating drawer).
 
 --------------------------------------------------------------------------------
 
-SESSION 8 CHANGES (2026-06-01) — Stay Signed In verification + Merge AppWare Account
+SESSION 8 CHANGES (2026-06-01) — Stay Signed In verification + Merge LyfeWare Account
 ------------------------------
 
 FEATURE — Stay signed in (verification)
   All four apps already had persistSession: true + autoRefreshToken: true in their
   Supabase clients from Session 7. Confirmed no additional changes needed.
-    - AppWare Auth: LoginPage.tsx checks for existing session on mount → redirects to
+    - LyfeWare Auth: LoginPage.tsx checks for existing session on mount → redirects to
       /portal or the requesting app automatically ✅
-    - Hungry: UserContext.jsx calls getSession() on mount + onAuthStateChange ✅
-    - Roomies: AuthContext.tsx listens to onAuthStateChange (INITIAL_SESSION restores
+    - Pantry: UserContext.jsx calls getSession() on mount + onAuthStateChange ✅
+    - HomeBase: AuthContext.tsx listens to onAuthStateChange (INITIAL_SESSION restores
       from localStorage on reload) ✅
-    - Jukebox: AuthContext.tsx calls getSession() on mount + onAuthStateChange ✅
+    - Vinyl: AuthContext.tsx calls getSession() on mount + onAuthStateChange ✅
 
-FEATURE — Merge AppWare Account (all apps)
-  Added a "Merge AppWare Account" / "Connected Accounts" section to the settings
+FEATURE — Merge LyfeWare Account (all apps)
+  Added a "Merge LyfeWare Account" / "Connected Accounts" section to the settings
   page of every app. Shows the user's currently connected sign-in methods and allows
   linking additional providers (Google) via Supabase's linkIdentity API.
 
@@ -157,32 +350,32 @@ FEATURE — Merge AppWare Account (all apps)
     - On error, shows inline error message
 
   Files changed:
-    AppWare Auth/src/pages/ProfilePage.tsx — Added identities state, linkGoogle(),
+    LyfeWare Auth/src/pages/ProfilePage.tsx — Added identities state, linkGoogle(),
       and "Connected Accounts" section with identity chips + "Link Google Account" button.
       Redirect URL: ${VITE_SITE_URL}/profile
-    Hungry/src/components/SettingsPage.jsx — Added import for supabase + Link icon;
-      identities state + linkGoogle(); "Merge AppWare Account" section at bottom of
+    Pantry/src/components/SettingsPage.jsx — Added import for supabase + Link icon;
+      identities state + linkGoogle(); "Merge LyfeWare Account" section at bottom of
       settings. Redirect URL: VITE_APP_URL or window.location.origin
-    Roomies/roomies-app/src/pages/More.tsx — Added UserIdentity import; identities
-      state + linkGoogle(); "Merge AppWare Account" GlassPanel before end of page.
+    HomeBase/__HOMEBASEAPP__/src/pages/More.tsx — Added UserIdentity import; identities
+      state + linkGoogle(); "Merge LyfeWare Account" GlassPanel before end of page.
       Redirect URL: VITE_APP_URL or window.location.origin
-    Jukebox/src/screens/settings/SettingsScreen.tsx — Added Linking import + UserIdentity
-      type; identities state + linkGoogle(); "Merge AppWare Account" Card section before
-      Sign Out button. On web: calls linkIdentity. On native: opens AppWare Auth /profile
+    Vinyl/src/screens/settings/SettingsScreen.tsx — Added Linking import + UserIdentity
+      type; identities state + linkGoogle(); "Merge LyfeWare Account" Card section before
+      Sign Out button. On web: calls linkIdentity. On native: opens LyfeWare Auth /profile
       in the device browser via Linking.openURL.
 
   FeatureStatus files updated:
-    AppWare Auth/Workbook/FeatureStatus.md — Account Linking section
-    Hungry/Workbook/FeatureStatus.md — Session 15 entry
-    Roomies/roomies-app/STATUS.md — Auth section
-    Jukebox/Workbook/FeatureStatus.md — Authentication section
+    LyfeWare Auth/Workbook/FeatureStatus.md — Account Linking section
+    Pantry/Workbook/FeatureStatus.md — Session 15 entry
+    HomeBase/__HOMEBASEAPP__/STATUS.md — Auth section
+    Vinyl/Workbook/FeatureStatus.md — Authentication section
 
   NOTE: Supabase Dashboard → Auth → Providers → Google must be enabled for
   linkIdentity to work. The redirect URLs for each app must also be in the Supabase
   "Redirect URLs" allowlist (already listed in the SUPABASE DASHBOARD CHECKLIST below).
 
 WHAT COULD NOT BE DONE
-  - Merging two completely separate AppWare accounts (data migration from account A
+  - Merging two completely separate LyfeWare accounts (data migration from account A
     to account B): Supabase does not provide a built-in account-merge API. This would
     require a Supabase Edge Function with the service_role key to copy all data from
     one user_id to another and then delete the source account. Not implemented.
@@ -196,41 +389,41 @@ SESSION 7 CHANGES (2026-05-31) — Stay signed in (all apps)
 
 FEATURE — Stay signed in if signed in once (all apps)
 
-Root cause: AppWareAuth's LoginPage had no session check on mount. Visiting
-https://authappware.netlify.app while already authenticated showed the login
+Root cause: LyfeWareAuth's LoginPage had no session check on mount. Visiting
+https://authlyfeware.netlify.app while already authenticated showed the login
 form instead of redirecting to the portal or the originating app. The sub-apps
-(Hungry, Roomies, Jukebox) already persist sessions via Supabase localStorage /
-AsyncStorage, but AppWareAuth and Hungry had implicit rather than explicit
+(Pantry, HomeBase, Vinyl) already persist sessions via Supabase localStorage /
+AsyncStorage, but LyfeWareAuth and Pantry had implicit rather than explicit
 persistSession configuration.
 
-Fix 1 — AppWareAuth LoginPage: Added useEffect that calls getSession() on mount.
+Fix 1 — LyfeWareAuth LoginPage: Added useEffect that calls getSession() on mount.
   If a session already exists AND redirect_to param is present: immediately
   forwards to `${redirectTo}#access_token=...&refresh_token=...` (same token
   injection used by the portal's "open app" button).
   If a session exists AND no redirect_to: navigate('/portal', {replace:true}).
   While the async check is in flight a spinner renders so the login form never
   flashes for authenticated users.
-  File changed: AppWareAuth/src/pages/LoginPage.tsx
+  File changed: LyfeWareAuth/src/pages/LoginPage.tsx
 
-Fix 2 — AppWareAuth Supabase client: Added explicit auth options.
+Fix 2 — LyfeWareAuth Supabase client: Added explicit auth options.
   persistSession: true + autoRefreshToken: true (these are Supabase defaults,
   now explicitly declared for clarity and to ensure no future createClient
   override silently disables them).
-  File changed: AppWareAuth/src/lib/supabase.ts
+  File changed: LyfeWareAuth/src/lib/supabase.ts
 
-Fix 3 — Hungry Supabase client: Same explicit auth options added.
-  File changed: Hungry/src/supabaseClient.js
+Fix 3 — Pantry Supabase client: Same explicit auth options added.
+  File changed: Pantry/src/supabaseClient.js
 
 No changes needed:
-  Roomies already had persistSession: true + autoRefreshToken: true explicit.
-  Jukebox already had both, plus AsyncStorage for native session storage.
+  HomeBase already had persistSession: true + autoRefreshToken: true explicit.
+  Vinyl already had both, plus AsyncStorage for native session storage.
 
 WHAT COULD NOT BE DONE
   None.
 
 --------------------------------------------------------------------------------
 
-SESSION 6 CHANGES (2026-05-31) — Jukebox full audit
+SESSION 6 CHANGES (2026-05-31) — Vinyl full audit
 ------------------------------
 
 Full codebase audit: read every src/ file, ran systematic checks. Fixed 6 bugs + deleted 1 stale file.
@@ -260,7 +453,7 @@ BUG FIX — DiscoverScreen navigated to wrong tab name
 
 BUG FIX — SettingsScreen hero showed only initials, not profile photo
   SettingsScreen hero avatar only showed the gradient+initials fallback even when profile photo was set.
-  Fix: shows jukebox_avatar_url ?? avatar_url with Image component, falls back to gradient initials.
+  Fix: shows vinyl_avatar_url ?? avatar_url with Image component, falls back to gradient initials.
   File: src/screens/settings/SettingsScreen.tsx
 
 CLEANUP — Deleted stale duplicate FriendsFeedScreen.tsx
@@ -273,10 +466,10 @@ WHAT COULD NOT BE DONE
 
 --------------------------------------------------------------------------------
 
-SESSION 5 CHANGES (2026-05-31) — Jukebox
+SESSION 5 CHANGES (2026-05-31) — Vinyl
 ------------------------------
 
-BUG FIX — Email sign-in does nothing (Jukebox)
+BUG FIX — Email sign-in does nothing (Vinyl)
   Root cause: .env had EXPO_SUPABASE_ANON_KEY (missing EXPO_PUBLIC_ prefix). Expo web only
   exposes EXPO_PUBLIC_* vars to the browser bundle, so EXPO_PUBLIC_SUPABASE_ANON_KEY was
   undefined → Supabase client was always null → AUTH_STUB used for all auth calls →
@@ -285,7 +478,7 @@ BUG FIX — Email sign-in does nothing (Jukebox)
   Fix: renamed EXPO_SUPABASE_ANON_KEY → EXPO_PUBLIC_SUPABASE_ANON_KEY in .env.
   Files changed: .env
 
-BUG FIX — AppWare SSO brings back to login screen (Jukebox)
+BUG FIX — LyfeWare SSO brings back to login screen (Vinyl)
   Two root causes:
   (1) Same null Supabase client as above. setSession was not in AUTH_STUB, so calling it threw
   TypeError which was silently swallowed by the async useEffect. Added setSession to AUTH_STUB.
@@ -293,22 +486,22 @@ BUG FIX — AppWare SSO brings back to login screen (Jukebox)
   (used for session persistence) is async — the write may not complete before the reload. On
   reload, getSession() finds no session → back to login. Fix: removed window.location.reload().
   onAuthStateChange in AuthContext fires after setSession and handles navigation without a reload.
-  Files changed: src/hooks/useAppWareSSO.ts, src/lib/supabase.ts
+  Files changed: src/hooks/useLyfeWareSSO.ts, src/lib/supabase.ts
 
 WHAT COULD NOT BE DONE
   None — all items in Changes.md were fixed.
 
 --------------------------------------------------------------------------------
 
-SESSION 4 CHANGES (2026-05-30) — Roomies
+SESSION 4 CHANGES (2026-05-30) — HomeBase
 ------------------------------
 
 BUG FIX — .gitignore emptied
-  The roomies-app/.gitignore was empty, exposing .env secrets and causing
+  The __HOMEBASEAPP__/.gitignore was empty, exposing .env secrets and causing
   node_modules/ and dist/ to appear as untracked in git.
   Fix: Restored a proper Vite/Node.js .gitignore excluding node_modules/, dist/,
   .env, .env.local, .env.*.local, .DS_Store, *.local.
-  File changed: roomies-app/.gitignore
+  File changed: __HOMEBASEAPP__/.gitignore
 
 BUG FIX — TypeScript build error TS2551 on Netlify
   supabase.from('profiles').insert({...}).catch(() => {}) failed the build
@@ -316,7 +509,7 @@ BUG FIX — TypeScript build error TS2551 on Netlify
   chained on the awaited result object {data, error}, not on the Promise.
   Supabase never throws — errors are returned in {error}.
   Fix: Removed .catch(() => {}) from AuthContext.tsx line 43.
-  File changed: roomies-app/src/context/AuthContext.tsx
+  File changed: __HOMEBASEAPP__/src/context/AuthContext.tsx
 
 FIX — All 41 ESLint errors/warnings cleared (eslint --max-warnings 0 now passes)
   - react-refresh/only-export-components (3): suppressed on useAuth/useHousehold/useTutorial
@@ -336,8 +529,8 @@ FIX — All 41 ESLint errors/warnings cleared (eslint --max-warnings 0 now passe
     src/pages/Pets.tsx, src/pages/Shopping.tsx, src/pages/Bookings.tsx
 
 DOCUMENTATION
-  Created roomies-app/STATUS.md — feature inventory (implemented + not yet built)
-  Created roomies-app/Workbook/Documentation.txt — session log
+  Created __HOMEBASEAPP__/STATUS.md — feature inventory (implemented + not yet built)
+  Created __HOMEBASEAPP__/Workbook/Documentation.txt — session log
 
 WHAT COULD NOT BE DONE
   None — all items in Changes.md were implemented.
@@ -347,7 +540,7 @@ WHAT COULD NOT BE DONE
 SESSION 3 CHANGES (2026-05-31)
 ------------------------------
 
-BUG FIX — Jukebox app icon not showing (PWA)
+BUG FIX — Vinyl app icon not showing (PWA)
   Root cause: App.tsx injected apple-touch-icon pointing to /favicon.png which is
   only 1129 bytes (~32px). iOS requires 180x180+ for home screen icons.
   Expo's `output: "single"` Metro build ignores web/index.html and generates its own
@@ -360,7 +553,7 @@ BUG FIX — Jukebox app icon not showing (PWA)
                  scripts/patch-html.js (new), netlify.toml, dist/index.html,
                  dist/manifest.json (new), dist/icon.png (new)
 
-BUG FIX — Jukebox email sign-in not working properly
+BUG FIX — Vinyl email sign-in not working properly
   Root cause: After signInWithPassword succeeded, AuthScreen immediately called getSession()
   which could return null due to an async storage-write race condition on web. This showed
   a false "Could not sign you in" error message even though the user was authenticated.
@@ -376,20 +569,20 @@ IMPROVEMENT — Signup 500 error user-facing message
   The raw error message was unhelpful.
   Fix: Added emailRedirectTo option to signUp call. 500 errors now show:
   "Account creation failed — the email service may be unavailable. Try again in a few
-  minutes or sign in with AppWare."
+  minutes or sign in with LyfeWare."
   Note: Root cause requires Supabase Dashboard → Authentication → Settings →
   configure custom SMTP or disable email confirmation for development.
   Files changed: src/screens/auth/AuthScreen.tsx
 
 FEATURE — Profile picture upload (tutorial step added)
   Previously added but uncommitted: useProfile uploadAvatar(), ProfileScreen avatar UI,
-  src/types/index.ts jukebox_avatar_url field, supabase migrations/004_jukebox_avatar.sql.
-  Also added appware_full_schema.sql schema column for jukebox_avatar_url.
+  src/types/index.ts vinyl_avatar_url field, supabase migrations/004_vinyl_avatar.sql.
+  Also added lyfeware_full_schema.sql schema column for vinyl_avatar_url.
   Added tutorial step "Your Profile Photo" to InteractiveTour (step 16 of 18).
   Requires: user-avatars Storage bucket in Supabase Dashboard → Storage (already in
   the unified schema creation checklist).
-  Files changed: src/screens/auth/InteractiveTour.tsx, supabase/appware_full_schema.sql,
-                 supabase/migrations/004_jukebox_avatar.sql (new)
+  Files changed: src/screens/auth/InteractiveTour.tsx, supabase/lyfeware_full_schema.sql,
+                 supabase/migrations/004_vinyl_avatar.sql (new)
 
 WHAT COULD NOT BE DONE
   - TypeScript type-check (npx tsc --noEmit) fails with "Maximum call stack size exceeded"
@@ -406,7 +599,7 @@ WHAT COULD NOT BE DONE
 SESSION 2 CHANGES (2026-05-31)
 ------------------------------
 
-BUG FIX — Google Sign-In Redirect Loop (AppWare Auth)
+BUG FIX — Google Sign-In Redirect Loop (LyfeWare Auth)
   Root cause: Supabase JS v2 has detectSessionInUrl: true by default, which
   automatically calls exchangeCodeForSession() when the /auth/callback page
   loads. The previous AuthCallbackPage also called exchangeCodeForSession()
@@ -416,75 +609,75 @@ BUG FIX — Google Sign-In Redirect Loop (AppWare Auth)
   listener. The listener fires SIGNED_IN after Supabase auto-processes the code,
   then redirects with injected tokens. Added a getSession() fallback for implicit
   flow and page reloads.
-  File changed: AppWareAuth/src/pages/AuthCallbackPage.tsx
+  File changed: LyfeWareAuth/src/pages/AuthCallbackPage.tsx
 
-BUG FIX — Jukebox FriendsFeedScreen TypeScript Errors
+BUG FIX — Vinyl FriendsFeedScreen TypeScript Errors
   FriendsFeedScreen.tsx was using theme.colors.*, theme.mesh, theme.physics.*,
   and theme.typography.heading — properties that don't exist on ThemeTokens.
   Fixed all references to use the actual ThemeTokens interface properties:
   theme.background, theme.accentPrimary, theme.textPrimary, theme.textMuted,
   theme.card, theme.borderRadius.lg, theme.gradientHero, theme.border,
   theme.accentSecondary. Used a hardcoded blur intensity of 20 (no physics prop).
-  File changed: Jukebox/src/screens/FriendsFeedScreen.tsx
+  File changed: Vinyl/src/screens/FriendsFeedScreen.tsx
 
 PROFILE PHOTO FEATURE (2026-05-31)
 -----------------------------------
-Added global AppWare profile photo + per-app override photo to all 4 apps.
+Added global LyfeWare profile photo + per-app override photo to all 4 apps.
 
-Schema: Added 3 new columns to profiles in appware_unified_schema.sql:
+Schema: Added 3 new columns to profiles in lyfeware_unified_schema.sql:
   - hungry_avatar_url text  (NULL = fall back to avatar_url)
-  - roomies_avatar_url text (NULL = fall back to avatar_url)
-  - jukebox_avatar_url text (NULL = fall back to avatar_url)
+  - homebase_avatar_url text (NULL = fall back to avatar_url)
+  - vinyl_avatar_url text (NULL = fall back to avatar_url)
 
 Storage path convention: user-avatars/{userId}/avatar.jpg (global),
-  user-avatars/{userId}/hungry.jpg, roomies.jpg, jukebox.jpg (per-app).
+  user-avatars/{userId}/pantry.jpg, homebase.jpg, vinyl.jpg (per-app).
 
-AppWare Auth portal (PortalPage.tsx):
+LyfeWare Auth portal (PortalPage.tsx):
   - Added OwnProfile state fetching avatar_url + display_name from profiles
   - Added handleAvatarUpload() which uploads to user-avatars bucket and updates profiles.avatar_url
   - Added clickable avatar in the greeting section with a pencil badge button
   - Uses hidden <input type="file"> triggered on badge click
 
-Hungry:
-  - UserContext.jsx: Added avatarUrl + hungryAvatarUrl state; fetchProfile now
+Pantry:
+  - UserContext.jsx: Added avatarUrl + pantryAvatarUrl state; fetchProfile now
     loads both columns; added handleUpdateAvatar(file, type) that uploads and
     updates the correct DB column
   - SettingsPage.jsx: New "Profile Photos" section at top with two upload tiles
-    (AppWare Global + Hungry Photo); spinner on upload; explanation text
-  - Header.jsx: Shows hungryAvatarUrl ?? avatarUrl as 36px rounded avatar
+    (LyfeWare Global + Pantry Photo); spinner on upload; explanation text
+  - Header.jsx: Shows pantryAvatarUrl ?? avatarUrl as 36px rounded avatar
     next to the greeting text; falls back to initial letter if no photo
 
-Roomies:
-  - types/index.ts: Added roomies_avatar_url: string | null to Profile interface
+HomeBase:
+  - types/index.ts: Added homebase_avatar_url: string | null to Profile interface
   - AuthContext.tsx: Added updateAvatar(file, type) method + exposed in context
-  - More.tsx: Added avatar display in profile card (roomies ?? global fallback);
-    two upload buttons (AppWare Photo / Roomies Photo) with spinners
-  - Dashboard.tsx: Header avatar uses roomies_avatar_url ?? avatar_url
+  - More.tsx: Added avatar display in profile card (homebase ?? global fallback);
+    two upload buttons (LyfeWare Photo / HomeBase Photo) with spinners
+  - Dashboard.tsx: Header avatar uses homebase_avatar_url ?? avatar_url
 
-Jukebox:
-  - types/index.ts: Added jukebox_avatar_url: string | null to UserProfile
+Vinyl:
+  - types/index.ts: Added vinyl_avatar_url: string | null to UserProfile
   - useProfile.ts: Added uploadAvatar(type) using expo-image-picker (native)
     or a file input (web); refactored into webPickAndUpload / nativePickAndUpload
     helpers to avoid TypeScript 6.0.3 stack overflow (pre-existing compiler bug)
-  - ProfileScreen.tsx: Avatar circle now shows real photo (jukebox ?? global);
-    tap to upload Jukebox photo; two small buttons "AppWare Photo" / "Jukebox Photo";
+  - ProfileScreen.tsx: Avatar circle now shows real photo (vinyl ?? global);
+    tap to upload Vinyl photo; two small buttons "LyfeWare Photo" / "Vinyl Photo";
     explanatory caption below
 
-Display fallback chain: jukebox_avatar_url/hungry_avatar_url/roomies_avatar_url → avatar_url → initials letter
+Display fallback chain: vinyl_avatar_url/hungry_avatar_url/homebase_avatar_url → avatar_url → initials letter
 
-NOTE: Schema change requires running appware_unified_schema.sql in Supabase
+NOTE: Schema change requires running lyfeware_unified_schema.sql in Supabase
 dashboard (or manually: ALTER TABLE profiles ADD COLUMN IF NOT EXISTS
-hungry_avatar_url text, ADD COLUMN IF NOT EXISTS roomies_avatar_url text,
-ADD COLUMN IF NOT EXISTS jukebox_avatar_url text;)
+hungry_avatar_url text, ADD COLUMN IF NOT EXISTS homebase_avatar_url text,
+ADD COLUMN IF NOT EXISTS vinyl_avatar_url text;)
 
 --------------------------------------------------------------------------------
 
-DEPENDENCY FIX — Jukebox lucide-react-native
+DEPENDENCY FIX — Vinyl lucide-react-native
   lucide-react-native was listed in package.json but had a corrupt install
   (missing package.json in node_modules, only README.md + dist/ present).
   Re-ran npm install --force + npm install lucide-react-native@0.460.0 --force.
-  All TypeScript errors now pass: AppWareAuth (0 errors), Hungry (builds clean),
-  Roomies (0 errors), Jukebox (0 errors after fixes).
+  All TypeScript errors now pass: LyfeWareAuth (0 errors), Pantry (builds clean),
+  HomeBase (0 errors), Vinyl (0 errors after fixes).
 
 VERIFICATION — All 14 EcosystemFeatures.md features confirmed implemented:
   All features verified present in codebase (see session 1 documentation below).
@@ -494,12 +687,12 @@ VERIFICATION — All 14 EcosystemFeatures.md features confirmed implemented:
 
 WHAT WAS DONE (Session 1)
 -------------
-Scanned all four AppWare project folders (AppWare Auth, Hungry, Roomies, Jukebox)
-and read every existing SQL file, .env file, CLAUDE.md, AppWareAuthIntegration.md,
+Scanned all four LyfeWare project folders (LyfeWare Auth, Pantry, HomeBase, Vinyl)
+and read every existing SQL file, .env file, CLAUDE.md, LyfeWareAuthIntegration.md,
 Notes.txt, and workbook files to fully understand each app.
 
-Built ONE unified SQL file: appware_unified_schema.sql (in this folder)
-that resolves all schema conflicts and sets up the complete AppWare ecosystem
+Built ONE unified SQL file: lyfeware_unified_schema.sql (in this folder)
+that resolves all schema conflicts and sets up the complete LyfeWare ecosystem
 on the shared Supabase project (wshadsznycwugowiexmy.supabase.co).
 
 Then implemented all cross-app schema migration code changes AND all
@@ -508,26 +701,26 @@ EcosystemFeatures.md features that were achievable in code.
 
 WHAT THE SQL FILE DOES
 ----------------------
-1. WIPES all existing AppWare tables (destructive — in Phase 0)
+1. WIPES all existing LyfeWare tables (destructive — in Phase 0)
 2. Recreates everything cleanly with no conflicts
 
 Key architecture decisions:
   - public.profiles           — Unified account for all 3 apps (merged all fields)
-  - public.households         — Shared between Hungry AND Roomies (same concept)
-  - public.friendships        — Unified using Jukebox model (status: pending/accepted/blocked)
+  - public.households         — Shared between Pantry AND HomeBase (same concept)
+  - public.friendships        — Unified using Vinyl model (status: pending/accepted/blocked)
   - public.household_members  — Single junction table replacing old patterns
   - public.cross_app_activity — NEW: cross-app signal bus powering all ecosystem features
 
 New tables in the unified schema vs previous per-app schemas:
-  - meal_plans, meal_plan_recipes    (Hungry smart meal prep persistence)
-  - chef_history, chef_history_photos (Hungry cook log with soundtrack field)
-  - potluck_items, potluck_claims    (Hungry household event coordination)
-  - cross_app_activity               (AppWare ecosystem signal bus)
+  - meal_plans, meal_plan_recipes    (Pantry smart meal prep persistence)
+  - chef_history, chef_history_photos (Pantry cook log with soundtrack field)
+  - potluck_items, potluck_claims    (Pantry household event coordination)
+  - cross_app_activity               (LyfeWare ecosystem signal bus)
 
 New columns added to profiles:
-  - hungry_tutorial_done, has_completed_roomies_tutorial  (tutorial state flags)
-  - jukebox_onboarding_done, jukebox_tutorial_done        (Jukebox onboarding)
-  - vibe_tags (jsonb)           — Jukebox genre/focus/era profile
+  - hungry_tutorial_done, has_completed_homebase_tutorial  (tutorial state flags)
+  - vinyl_onboarding_done, vinyl_tutorial_done        (Vinyl onboarding)
+  - vibe_tags (jsonb)           — Vinyl genre/focus/era profile
   - favorite_genres (text[])    — cross-app playlist seeding
   - hungry_settings (jsonb)     — dietary restrictions, nutrition goals, budget, etc.
 
@@ -536,8 +729,8 @@ New columns on other tables:
   - chores.difficulty (int 1-5)     — BPM hint for Chore-Sync Anthems
 
 Storage buckets:
-  - roomies-property-vault  (Roomies property documents)
-  - chef-history-photos     (Hungry cook log photos)
+  - homebase-property-vault  (HomeBase property documents)
+  - chef-history-photos     (Pantry cook log photos)
   - user-avatars            (Global profile pictures)
 
 Realtime enabled on:
@@ -549,7 +742,7 @@ Realtime enabled on:
 HOW TO RUN THE SQL
 ------------------
 1. Go to: https://supabase.com/dashboard/project/wshadsznycwugowiexmy/sql/new
-2. Open appware_unified_schema.sql from this folder
+2. Open lyfeware_unified_schema.sql from this folder
 3. Copy the ENTIRE file contents
 4. Paste into the SQL Editor and click Run (▶)
 
@@ -560,7 +753,7 @@ HOW TO RUN THE SQL
 APP CODE CHANGES MADE (all changes have been applied to source files)
 ----------------------------------------------------------------------
 
-== HUNGRY ==
+== PANTRY ==
   - FriendsPage.jsx     — Rewrote all friendships/friend_requests logic for new schema
   - HouseholdTab.jsx    — Members query uses household_members junction table;
                           friendships use new schema; added "At the Store" banner (#7);
@@ -571,15 +764,15 @@ APP CODE CHANGES MADE (all changes have been applied to source files)
   - CookingMode.jsx     — Writes 'cooking_started' to cross_app_activity with genre
                           seed mapped from recipe cuisine on cook mode open (#1)
   - useInventory.js     — Captures now_playing when marking as cooked (Chef History
-                          Soundtrack, #12); pushes priced household items to Roomies
+                          Soundtrack, #12); pushes priced household items to HomeBase
                           transactions when shared to household (#3)
-  - AnalyticsDashboard.jsx — Added AppWare Wrap tab aggregating monthly cross-app stats
+  - AnalyticsDashboard.jsx — Added LyfeWare Wrap tab aggregating monthly cross-app stats
                              (#5); writes nutrition_shortfall signal (#14)
-  - App.jsx             — Reads Jukebox mood/late-night signal; passes initialMood to
+  - App.jsx             — Reads Vinyl mood/late-night signal; passes initialMood to
                           RecipeExplorer (#6, #10)
   - RecipeExplorer.jsx  — Accepts initialMood prop, pre-selects mood filter (#6, #10)
 
-== ROOMIES ==
+== HOMEBASE ==
   - types/index.ts      — Household.title → name; Profile.household_id → active_household_id
   - HouseholdContext.tsx — Uses active_household_id throughout
   - App.tsx             — hasHousehold guard uses active_household_id
@@ -589,21 +782,21 @@ APP CODE CHANGES MADE (all changes have been applied to source files)
   - Dashboard.tsx       — household?.name
   - Chores.tsx          — Writes chore_completed and all_chores_done signals (#2, #8);
                           sorts high-difficulty chores first when nutrition_shortfall
-                          detected from Hungry (#14)
+                          detected from Pantry (#14)
   - Finance.tsx         — Writes all_bills_paid signal when all splits settled (#13)
 
-== JUKEBOX ==
-  - types/index.ts      — Removed monthly_active_users; added jukebox_onboarding_done,
-                          jukebox_tutorial_done, vibe_tags (already in app code,
+== VINYL ==
+  - types/index.ts      — Removed monthly_active_users; added vinyl_onboarding_done,
+                          vinyl_tutorial_done, vibe_tags (already in app code,
                           now aligned with schema)
   - HomeScreen.tsx      — Writes mood_signal / late_night_active on mount (#6, #10);
                           reads nutrition_shortfall and shows workout playlist banner (#14)
   - useWishlist.ts      — Syncs concert wishlist to Supabase; detects household members
                           wanting same artist and writes concert_fund_suggested (#9)
 
-== APPWARE AUTH PORTAL ==
+== LYFEWARE AUTH PORTAL ==
   No code changes needed — uses Supabase Auth directly, which is unchanged.
-  Recommended: configure redirect_to flow per AppWareAuthIntegration.md.
+  Recommended: configure redirect_to flow per LyfeWareAuthIntegration.md.
 
 
 ECOSYSTEM FEATURES IMPLEMENTED
@@ -616,14 +809,14 @@ app; the "read" side is also implemented where feasible in code.
   #2  Chore-Sync Anthems     — Chores.tsx → 'chore_completed' with BPM hint from
                                chore.difficulty
   #3  Smart Grocery Split    — When pantry item with price is shared to household,
-                               auto-creates a Groceries transaction in Roomies
+                               auto-creates a Groceries transaction in HomeBase
   #4  Potluck Planner        — HouseholdTab fetches member dietary restrictions and
                                generates filtered item suggestions; writes
-                               'potluck_created' signal for Jukebox playlist
-  #5  Eco-Vibe Analytics     — AppWare Wrap tab in Hungry analytics: shows monthly
+                               'potluck_created' signal for Vinyl playlist
+  #5  Eco-Vibe Analytics     — LyfeWare Wrap tab in Pantry analytics: shows monthly
                                recipes cooked, chores done, bills paid, top cuisine,
-                               pantry worth, and currently playing on Jukebox
-  #6  Mood-Food Matching     — Jukebox writes mood signal; Hungry reads it and
+                               pantry worth, and currently playing on Vinyl
+  #6  Mood-Food Matching     — Vinyl writes mood signal; Pantry reads it and
                                pre-selects matching mood filter in recipe explorer
   #7  Grocery Gig Status     — PersonalShopper sets user_presence to "🛒 At the
                                Store"; HouseholdTab shows banner when any member is
@@ -632,16 +825,16 @@ app; the "read" side is also implemented where feasible in code.
                                chore is completed
   #9  Concert Fund Tracker   — useWishlist syncs to Supabase; detects matching
                                household wishlists and writes 'concert_fund_suggested'
- #10  Late-Night Snack Mode  — Jukebox writes 'late_night_active' when playing after
-                               11pm; Hungry pre-selects "late_night" mood filter
+ #10  Late-Night Snack Mode  — Vinyl writes 'late_night_active' when playing after
+                               11pm; Pantry pre-selects "late_night" mood filter
  #11  Grocery Gig Status     — see #7
  #12  Soundtrack of My Life  — Queries now_playing table when marking a recipe as
                                cooked; saves track in chef_history.soundtrack
  #13  Rent-Day Rewards       — Finance.tsx writes 'all_bills_paid' when all debt
                                splits are settled
- #14  Nutritional BPM        — Hungry writes nutrition_shortfall signal; Jukebox
+ #14  Nutritional BPM        — Pantry writes nutrition_shortfall signal; Vinyl
                                HomeScreen reads it and shows workout playlist banner;
-                               Roomies Chores sorts high-difficulty chores first
+                               HomeBase Chores sorts high-difficulty chores first
 
 
 APIs YOU NEED TO INTEGRATE
@@ -654,7 +847,7 @@ of certain features. The database and code signal infrastructure is already in p
    What it does: Returns valence, energy, danceability, tempo (BPM) for any track.
                  Currently the code uses time-of-day heuristics as a proxy.
    How to set up:
-     - In Jukebox .env: EXPO_PUBLIC_SPOTIFY_CLIENT_ID already set (a2e2a9cac6e34fc9...)
+     - In Vinyl .env: EXPO_PUBLIC_SPOTIFY_CLIENT_ID already set (a2e2a9cac6e34fc9...)
      - Request the 'user-recently-played' and 'user-top-read' OAuth scopes
      - Call: GET https://api.spotify.com/v1/audio-features/{id}
      - Endpoint reference: https://developer.spotify.com/documentation/web-api/reference/get-audio-features
@@ -666,7 +859,7 @@ of certain features. The database and code signal infrastructure is already in p
                  (e.g., 'grocery_or_supermarket').
    How to set up:
      - Create a Google Cloud project → enable Places API
-     - Set VITE_GOOGLE_PLACES_KEY in Hungry's .env
+     - Set VITE_GOOGLE_PLACES_KEY in Pantry's .env
      - Call: GET https://maps.googleapis.com/maps/api/place/nearbysearch/json
              ?location=LAT,LNG&radius=100&type=grocery_or_supermarket&key=KEY
    Note: Browser Geolocation API (navigator.geolocation) is already in place in
@@ -688,7 +881,7 @@ as native builds.
    Requires: Apple Developer Program membership — $99/year at developer.apple.com/programs/enroll/
    Once paid:
      - Apple Developer Console → Certificates, Identifiers & Profiles
-     - Create a Service ID (e.g., com.appware.auth)
+     - Create a Service ID (e.g., com.lyfeware.auth)
      - Create a .p8 private key under "Keys"
      - Supabase Dashboard → Authentication → Providers → Apple
        → paste Service ID, Team ID, Key ID, and .p8 contents
@@ -705,7 +898,7 @@ as native builds.
    These are not available in a web PWA. The current fallback is: the banner
    activates when the user manually opens Personal Shopper mode.
 
-2. iOS LIVE ACTIVITIES / DYNAMIC ISLAND (Hungry Cooking Mode)
+2. iOS LIVE ACTIVITIES / DYNAMIC ISLAND (Pantry Cooking Mode)
    Showing the current recipe step on the lock screen or in the Dynamic Island
    while Cooking Mode is active requires the ActivityKit framework (iOS 16.2+).
    Not possible in a web app. Requires a native Swift UI extension.
@@ -715,25 +908,25 @@ as native builds.
    while the app is open. Background push notifications (e.g., "Your spinach
    expires tomorrow!", "Omkar is at Whole Foods") require:
      - Web: Push API + a service worker (partially feasible in the PWA)
-     - Native: Expo Notifications (already set up in Jukebox via push_token
+     - Native: Expo Notifications (already set up in Vinyl via push_token
        in drop_reminders table) — extend this pattern to other signal types
    The drop_reminders table already stores push_token per user — use that
    infrastructure to send cross_app_activity push notifications.
 
-4. APPLE MUSIC / MUSICKIT INTEGRATION (Jukebox)
+4. APPLE MUSIC / MUSICKIT INTEGRATION (Vinyl)
    Full Apple Music integration (playback, library access, now-playing sync)
    requires MusicKit JS (web) or MusicKit on iOS. Currently shows "Coming Soon."
    MusicKit requires an Apple Developer membership and a MusicKit key.
 
-5. INSTAGRAM GRAPH API (Jukebox Social Sync)
+5. INSTAGRAM GRAPH API (Vinyl Social Sync)
    Connecting Instagram to sync friends from the user's follower/following list
    requires Instagram Graph API access, which requires:
      - A Facebook/Meta Developer App with instagram_basic permission
      - App review approval from Meta for production use
-   Credentials: EXPO_PUBLIC_INSTAGRAM_APP_ID and SECRET in Jukebox .env
+   Credentials: EXPO_PUBLIC_INSTAGRAM_APP_ID and SECRET in Vinyl .env
    are already placeholder-set.
 
-6. VENMO DEEP-LINK SPLITS (Hungry + Roomies)
+6. VENMO DEEP-LINK SPLITS (Pantry + HomeBase)
    Direct Venmo payment requests (beyond the deep-link URL already implemented
    in HouseholdTab) require the Venmo API (restricted to approved partners).
    The current Venmo link opens the Venmo app with amount/note pre-filled.
@@ -768,15 +961,15 @@ After running the SQL:
 
 [ ] Authentication → URL Configuration
     Add all your app URLs to the Redirect URLs allowlist:
-      https://authappware.netlify.app
-      https://authappware.netlify.app/**
-      https://<your-hungry-netlify-url>.netlify.app
-      https://<your-hungry-netlify-url>.netlify.app/**
-      https://<your-roomies-netlify-url>.netlify.app
-      https://<your-roomies-netlify-url>.netlify.app/**
-      https://<your-jukebox-netlify-url>.netlify.app
-      https://<your-jukebox-netlify-url>.netlify.app/**
-      jukebox://auth/callback    (for Expo native deep link)
+      https://authlyfeware.netlify.app
+      https://authlyfeware.netlify.app/**
+      https://<your-pantry-netlify-url>.netlify.app
+      https://<your-pantry-netlify-url>.netlify.app/**
+      https://<your-homebase-netlify-url>.netlify.app
+      https://<your-homebase-netlify-url>.netlify.app/**
+      https://<your-vinyl-netlify-url>.netlify.app
+      https://<your-vinyl-netlify-url>.netlify.app/**
+      vinyl://auth/callback    (for Expo native deep link)
       http://localhost:5173      (for local dev)
       http://localhost:8080      (for local dev)
 
@@ -787,7 +980,7 @@ After running the SQL:
 
 [ ] Storage
     Verify these buckets were created:
-      - roomies-property-vault  (public: true)
+      - homebase-property-vault  (public: true)
       - chef-history-photos     (public: true)
       - user-avatars            (public: true)
 
