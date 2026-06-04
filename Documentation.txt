@@ -1,6 +1,74 @@
 ﻿================================================================================
 LYFEWARE ECOSYSTEM — DOCUMENTATION
-Last updated: 2026-06-03
+Last updated: 2026-06-04
+================================================================================
+
+SESSION 24 CHANGES (2026-06-04) — Bug fixes across Pantry, Vinyl, HomeBase
+------------------------------
+
+VINYL (Jukebox/)
+  BUG FIX — Tutorial doesn't navigate to the relevant page
+    InteractiveTour showed overlay steps but never moved the app to the correct tab.
+    Fixed: added useNavigation import + useEffect that calls
+    navigation.navigate('MainApp', { screen: current.tab }) on every step change.
+    All 21 steps now have a `tab` field.
+    Files changed: Jukebox/src/screens/auth/InteractiveTour.tsx
+
+  BUG FIX — Artist name not tappable in TrackDetailModal
+    Artist <Text> in TrackDetailModal was plain and non-interactive. Fixed: wrapped in
+    TouchableOpacity with useNavigation. Tapping closes the modal and navigates to
+    Friends → ArtistDetailScreen after 300ms.
+    Files changed: Jukebox/src/components/modals/TrackDetailModal.tsx
+
+  BUG FIX — Play/pause/next/prev do nothing when Spotify not connected
+    playbackControl() in SpotifyDataContext silently returned when tokenRef.current
+    was null. Fixed: now shows Alert('Connect Spotify', 'Go to Profile → Settings...')
+    Files changed: Jukebox/src/context/SpotifyDataContext.tsx
+
+HOMEBASE (Roomies/roomies-app/)
+  BUG FIX — Adding inventory item fails with RLS error
+    household_inventory INSERT policy used is_household_member() with explicit
+    WITH CHECK. Recreation of policies via migration 007 using the fixed function
+    (SET search_path = public already applied in 004). Also fixes shopping_list
+    INSERT: old policy only allowed active_household_id match; extended to also
+    accept household_members membership. Trigger + back-fill sync active_household_id
+    from household_members for all existing users.
+    Files changed: Roomies/roomies-app/supabase/migrations/007_fix_cross_app_rls.sql
+
+  BUG FIX — Adding to shopping list does nothing
+    addItem() had no error check on the Supabase insert. Added { error } destructuring,
+    early return on error, and inline error display above the form.
+    Files changed: Roomies/roomies-app/src/pages/Shopping.tsx
+
+  FEATURE — Add food items from HomeBase to Pantry's fridge
+    Inventory add form now has a Supply / Food Item toggle. Food Item mode shows food
+    categories (Produce, Dairy, Meat, Pantry, Frozen, Beverages, Snacks, Other) plus
+    an optional expiry date field. Inserts into fridge_inventory with is_household=true
+    so the item appears in Pantry's household fridge view immediately.
+    Files changed: Roomies/roomies-app/src/pages/Inventory.tsx
+                   Roomies/roomies-app/supabase/migrations/007_fix_cross_app_rls.sql
+
+PANTRY (Hungry/)
+  BUG FIX — Start Cooking (Simple Recipe View / Cooking Mode) closes modal
+    Clicking the cooking choice sheet or simple recipe view overlay caused the
+    recipe modal to dismiss. Root cause: both overlays were siblings inside an outer
+    div with onClick={() => setModal(null)}. Click events bubbled up to the backdrop.
+    Fixed: added onClick={(e) => e.stopPropagation()} to both overlay wrapper divs.
+    Files changed: Hungry/src/components/RecipeModal.jsx
+
+  BUG FIX — Shopping list had duplicate household switcher
+    Shopping tab in App.jsx had a household switcher section (lines 268-295) that
+    duplicated the master toggle in the Header. Removed the duplicate; only the
+    "Go Shopping" button remains.
+    Files changed: Hungry/src/App.jsx
+
+NOT DONE / LIMITATIONS (Session 24)
+- Vinyl liner notes submit: already working correctly per schema (unique constraint on
+  user_id,album_id,platform exists; RLS policy allows self-insert). Button is disabled
+  when myScore === 0 — this is correct behavior (user must drag the stylus first).
+- HomeBase tutorial example cards: already implemented in Tutorial.tsx (isFallback
+  state + preview cards). No change needed.
+
 ================================================================================
 
 SESSION 23 CHANGES (2026-06-03) — Bug fixes + feature additions across all apps
