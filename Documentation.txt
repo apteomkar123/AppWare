@@ -1,6 +1,55 @@
 ﻿================================================================================
 LYFEWARE ECOSYSTEM — DOCUMENTATION
-Last updated: 2026-06-04
+Last updated: 2026-06-12
+================================================================================
+
+SESSION 27 CHANGES (2026-06-12) — Cross-app household sync fix
+------------------------------
+
+ROOT CAUSE
+  Roomies (HomeBase) wrote household data to profiles.active_household_id only.
+  Pantry (Hungry) reads from auth.user_metadata.household_ids +
+  active_household_id as its primary source. These two stores were never kept
+  in sync, so households created or joined in HomeBase were invisible to Pantry,
+  causing pantry items and shopping lists to not appear in either direction.
+
+HOMEBASE (Roomies/roomies-app/)
+  BUG FIX — Household create/join does not sync to auth.user_metadata
+    handleFinishCreate() and handleFinishJoin() in Onboarding.tsx now call
+    supabase.auth.updateUser({ data: { household_ids, active_household_id } })
+    after writing profiles + household_members. The household_ids array includes
+    the homebase-only Pantry household when that mode is selected.
+    Files changed: Roomies/roomies-app/src/pages/Onboarding.tsx
+
+  BUG FIX — Household switch/join/create/leave in Settings not synced
+    switchHousehold(), joinNewHousehold(), createNewHousehold(), and
+    leaveHousehold() in More.tsx each fetch the current user_metadata,
+    compute the new household_ids array and active_household_id, then call
+    supabase.auth.updateUser() to keep auth metadata in sync.
+    Files changed: Roomies/roomies-app/src/pages/More.tsx
+
+PANTRY (Hungry/)
+  BUG FIX — Empty household list when user set up HomeBase first
+    loadUserState() in UserContext.jsx now has a fallback: if household_ids is
+    empty in user_metadata, it fetches profiles.active_household_id and uses
+    that as a recovery value. It then auto-heals by writing it back to
+    user_metadata (fire-and-forget) so subsequent loads skip the extra round-trip.
+    Files changed: Hungry/src/components/UserContext.jsx
+
+WHAT'S FIXED
+  - Households created in HomeBase now visible in Pantry's household switcher
+  - Pantry items now appear in HomeBase Inventory (fridge_inventory synced)
+  - Shopping list items added in Pantry now appear in HomeBase Shopping page
+  - Shopping list items added in HomeBase (shopping_list table) continue to
+    appear in Pantry's shopping list
+  - Switching active household in HomeBase now updates Pantry's active household
+
+WHAT'S NOT CHANGED
+  - The pantry-specific household override (profiles.hungry_household_id) is
+    still managed exclusively by Pantry; HomeBase does not read it
+  - HomeBase's household IDs are also stored in user_metadata.household_ids
+    which Pantry already read; existing Pantry-first users are unaffected
+
 ================================================================================
 
 SESSION 24 CHANGES (2026-06-04) — Bug fixes across Pantry, Vinyl, HomeBase
